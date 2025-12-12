@@ -3,16 +3,36 @@
 
 """API clients and reconcilers for *arr applications."""
 
+from charmarr_lib.core._arr._arr_client import (
+    ArrApiClient,
+    DownloadClientResponse,
+    HostConfigResponse,
+    QualityProfileResponse,
+    RootFolderResponse,
+)
 from charmarr_lib.core._arr._base_client import (
     ArrApiConnectionError,
     ArrApiError,
     ArrApiResponseError,
-    BaseArrApiClient,
+)
+from charmarr_lib.core._arr._prowlarr_client import (
+    ApplicationResponse,
+    IndexerResponse,
+    ProwlarrApiClient,
+    ProwlarrHostConfigResponse,
 )
 
 __all__ = [
+    "ApplicationResponse",
+    "ArrApiClient",
     "ArrApiConnectionError",
     "ArrApiError",
     "ArrApiResponseError",
-    "BaseArrApiClient",
+    "DownloadClientResponse",
+    "HostConfigResponse",
+    "IndexerResponse",
+    "ProwlarrApiClient",
+    "ProwlarrHostConfigResponse",
+    "QualityProfileResponse",
+    "RootFolderResponse",
 ]

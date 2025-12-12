@@ -4,7 +4,7 @@
 """Base API client for *arr applications."""
 
 import logging
-from typing import Any
+from typing import Any, TypeVar
 
 import httpx
 from pydantic import BaseModel
@@ -16,6 +16,8 @@ from tenacity import (
 )
 
 logger = logging.getLogger(__name__)
+
+ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
 class ArrApiError(Exception):
@@ -215,10 +217,10 @@ class BaseArrApiClient:
     def _get_validated(
         self,
         endpoint: str,
-        response_model: type[BaseModel],
+        response_model: type[ModelT],
         *,
         params: dict[str, Any] | None = None,
-    ) -> BaseModel:
+    ) -> ModelT:
         """Make a GET request and validate response against a Pydantic model.
 
         Args:
@@ -235,10 +237,10 @@ class BaseArrApiClient:
     def _get_validated_list(
         self,
         endpoint: str,
-        item_model: type[BaseModel],
+        item_model: type[ModelT],
         *,
         params: dict[str, Any] | None = None,
-    ) -> list[BaseModel]:
+    ) -> list[ModelT]:
         """Make a GET request and validate response as a list of Pydantic models.
 
         Args:
@@ -256,8 +258,8 @@ class BaseArrApiClient:
         self,
         endpoint: str,
         json: dict[str, Any],
-        response_model: type[BaseModel],
-    ) -> BaseModel:
+        response_model: type[ModelT],
+    ) -> ModelT:
         """Make a POST request and validate response against a Pydantic model.
 
         Args:
@@ -275,8 +277,8 @@ class BaseArrApiClient:
         self,
         endpoint: str,
         json: dict[str, Any],
-        response_model: type[BaseModel],
-    ) -> BaseModel:
+        response_model: type[ModelT],
+    ) -> ModelT:
         """Make a PUT request and validate response against a Pydantic model.
 
         Args:
