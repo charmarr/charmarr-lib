@@ -1,0 +1,41 @@
+[project]
+name = "charmarr-lib-testing"
+description = "Testing utilities for Charmarr charms"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "LGPL-3.0-or-later" }
+authors = [
+    { name = "Adhitya Ravi", email = "adhityashan95@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Pytest",
+]
+dependencies = [
+    "pytest>=8.0",
+    "pytest-bdd>=7.0",
+    "pytest-jubilant>=0.1",
+    "ops>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-cov>=4.0",
+    "ruff>=0.1",
+    "mypy>=1.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/charmarr_lib"]
+
+[tool.hatch.version]
+path = "src/charmarr_lib/testing/_version.py"
