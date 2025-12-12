@@ -12,6 +12,7 @@ members = [
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",
+    "pytest-httpx>=0.30",
     "coverage>=7.0",
     "ops-scenario>=7.0",
     "ruff>=0.1",

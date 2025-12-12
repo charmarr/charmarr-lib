@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/charmarr-charmarr-lib.png" width="350" alt="Charmarr Lib">
+</p>
+
 # Charmarr Library Monorepo
 
 Shared libraries for Charmarr charms implementing Juju relations and reconcilers, distributed as three pip-installable packages from a single monorepo.

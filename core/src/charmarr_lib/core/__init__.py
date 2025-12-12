@@ -6,6 +6,11 @@ This package provides:
 - Reconcilers for managing application configuration
 """
 
+from charmarr_lib.core._arr import (
+    ArrApiConnectionError,
+    ArrApiError,
+    ArrApiResponseError,
+)
 from charmarr_lib.core.constants import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
     MEDIA_TYPE_DOWNLOAD_PATHS,
@@ -33,6 +38,9 @@ from charmarr_lib.core.interfaces import (
 __all__ = [
     "MEDIA_MANAGER_IMPLEMENTATIONS",
     "MEDIA_TYPE_DOWNLOAD_PATHS",
+    "ArrApiConnectionError",
+    "ArrApiError",
+    "ArrApiResponseError",
     "DownloadClient",
     "DownloadClientChangedEvent",
     "DownloadClientProvider",
