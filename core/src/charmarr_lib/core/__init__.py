@@ -7,11 +7,13 @@ This package provides:
 """
 
 from charmarr_lib.core._arr import (
+    ApplicationConfigBuilder,
     ApplicationResponse,
     ArrApiClient,
     ArrApiConnectionError,
     ArrApiError,
     ArrApiResponseError,
+    DownloadClientConfigBuilder,
     DownloadClientResponse,
     HostConfigResponse,
     IndexerResponse,
@@ -19,6 +21,7 @@ from charmarr_lib.core._arr import (
     ProwlarrHostConfigResponse,
     QualityProfileResponse,
     RootFolderResponse,
+    SecretGetter,
 )
 from charmarr_lib.core.constants import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
@@ -47,6 +50,7 @@ from charmarr_lib.core.interfaces import (
 __all__ = [
     "MEDIA_MANAGER_IMPLEMENTATIONS",
     "MEDIA_TYPE_DOWNLOAD_PATHS",
+    "ApplicationConfigBuilder",
     "ApplicationResponse",
     "ArrApiClient",
     "ArrApiConnectionError",
@@ -54,6 +58,7 @@ __all__ = [
     "ArrApiResponseError",
     "DownloadClient",
     "DownloadClientChangedEvent",
+    "DownloadClientConfigBuilder",
     "DownloadClientProvider",
     "DownloadClientProviderData",
     "DownloadClientRequirer",
@@ -74,4 +79,5 @@ __all__ = [
     "QualityProfileResponse",
     "RequestManager",
     "RootFolderResponse",
+    "SecretGetter",
 ]

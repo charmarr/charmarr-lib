@@ -1,7 +1,7 @@
 # Copyright 2025 The Charmarr Project
 # See LICENSE file for licensing details.
 
-"""API clients and reconcilers for *arr applications."""
+"""API clients, config builders, and reconcilers for *arr applications."""
 
 from charmarr_lib.core._arr._arr_client import (
     ArrApiClient,
@@ -15,6 +15,11 @@ from charmarr_lib.core._arr._base_client import (
     ArrApiError,
     ArrApiResponseError,
 )
+from charmarr_lib.core._arr._config_builders import (
+    ApplicationConfigBuilder,
+    DownloadClientConfigBuilder,
+    SecretGetter,
+)
 from charmarr_lib.core._arr._prowlarr_client import (
     ApplicationResponse,
     IndexerResponse,
@@ -23,11 +28,13 @@ from charmarr_lib.core._arr._prowlarr_client import (
 )
 
 __all__ = [
+    "ApplicationConfigBuilder",
     "ApplicationResponse",
     "ArrApiClient",
     "ArrApiConnectionError",
     "ArrApiError",
     "ArrApiResponseError",
+    "DownloadClientConfigBuilder",
     "DownloadClientResponse",
     "HostConfigResponse",
     "IndexerResponse",
@@ -35,4 +42,5 @@ __all__ = [
     "ProwlarrHostConfigResponse",
     "QualityProfileResponse",
     "RootFolderResponse",
+    "SecretGetter",
 ]

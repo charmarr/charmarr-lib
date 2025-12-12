@@ -27,8 +27,6 @@ class DownloadClient(str, Enum):
 
     QBITTORRENT = "qbittorrent"
     SABNZBD = "sabnzbd"
-    DELUGE = "deluge"
-    TRANSMISSION = "transmission"
 
 
 class DownloadClientType(str, Enum):
