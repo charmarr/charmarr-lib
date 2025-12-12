@@ -12,6 +12,7 @@ members = [
 [manifest.dependency-groups]
 dev = [
     { name = "coverage", specifier = ">=7.0" },
+    { name = "ops-scenario", specifier = ">=7.0" },
     { name = "pre-commit", specifier = ">=3.0" },
     { name = "pyright", specifier = ">=1.1.350" },
     { name = "pytest", specifier = ">=8.0" },
@@ -627,6 +628,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/eb/50/f0bae442ba54114c0ed4983a7bece9330f9f170dfbd04caa8284c8deb476/ops-3.4.0.tar.gz", hash = "sha256:e100d904f0616eb11345547ad35a95caf5a2d178efa8ad4beebd7f045192a64a", size = 573216, upload-time = "2025-11-27T04:45:58.852Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/e6/262240beb2e3f2fd981ebb82412148c93f830606bfe1fcabf92cdb967c56/ops-3.4.0-py3-none-any.whl", hash = "sha256:d5ea906cd9bf403fe0e83d10ee5ab9bd2307596a97c1690784f937d54d5a738c", size = 211359, upload-time = "2025-11-27T04:45:54.161Z" },
+]
+
+[[package]]
+name = "ops-scenario"
+version = "8.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ops" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/80/a4/50dbe351488fed7621931962626563c7a8c6b65035fae09616251f03f16f/ops_scenario-8.4.0.tar.gz", hash = "sha256:b8837dfe6d58596d1287589c62101cfe6ca350f43d8c64ba41c5305dd741af0c", size = 111219, upload-time = "2025-11-27T04:46:00.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/1c/c0d3cccc0ff50c88d21dc3b5ce2944c71f8d094f8de9daa7e555b1dd30e1/ops_scenario-8.4.0-py3-none-any.whl", hash = "sha256:a8de25b75a896bdc8958d7e4dc38ab06ef6cb07bfaeb4c725e64cadde712a7dd", size = 63250, upload-time = "2025-11-27T04:45:55.776Z" },
 ]
 
 [[package]]
