@@ -164,3 +164,42 @@ def test_requirer_is_ready_logic():
 
     with ctx(ctx.on.start(), State(leader=True, relations=[])) as mgr:
         assert mgr.charm.requirer.is_ready() is False
+
+
+def test_provider_publish_data_non_leader():
+    """Test provider doesn't publish data when not leader."""
+    ctx = Context(ProviderCharm, meta=ProviderCharm.META)
+    relation = Relation(endpoint="download-client", interface="download_client")
+    state_in = State(leader=False, relations=[relation])
+
+    with ctx(ctx.on.start(), state_in) as mgr:
+        provider_data = DownloadClientProviderData(
+            api_url="http://qbit:8080",
+            credentials_secret_id="secret://456",
+            client=DownloadClient.QBITTORRENT,
+            client_type=DownloadClientType.TORRENT,
+            instance_name="qbit",
+        )
+        mgr.charm.provider.publish_data(provider_data)
+        state_out = mgr.run()
+
+    relation_out = state_out.get_relations("download-client")[0]
+    assert "config" not in relation_out.local_app_data
+
+
+def test_requirer_publish_data_non_leader():
+    """Test requirer doesn't publish data when not leader."""
+    ctx = Context(RequirerCharm, meta=RequirerCharm.META)
+    relation = Relation(endpoint="download-client", interface="download_client")
+    state_in = State(leader=False, relations=[relation])
+
+    with ctx(ctx.on.start(), state_in) as mgr:
+        requirer_data = DownloadClientRequirerData(
+            manager=MediaManager.RADARR,
+            instance_name="radarr",
+        )
+        mgr.charm.requirer.publish_data(requirer_data)
+        state_out = mgr.run()
+
+    relation_out = state_out.get_relations("download-client")[0]
+    assert "config" not in relation_out.local_app_data

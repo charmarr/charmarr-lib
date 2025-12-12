@@ -64,6 +64,9 @@ class DownloadClientProvider(Object):
 
     def publish_data(self, data: DownloadClientProviderData) -> None:
         """Publish provider data to all relations."""
+        if not self._charm.unit.is_leader():
+            return
+
         for relation in self._charm.model.relations.get(self._relation_name, []):
             relation.data[self._charm.app]["config"] = data.model_dump_json()
 
@@ -71,15 +74,14 @@ class DownloadClientProvider(Object):
         """Get all connected requirers with valid data."""
         requirers = []
         for relation in self._charm.model.relations.get(self._relation_name, []):
-            for _unit in relation.units:
-                try:
-                    app_data = relation.data[relation.app]
-                    if app_data and "config" in app_data:
-                        requirers.append(
-                            DownloadClientRequirerData.model_validate_json(app_data["config"])
-                        )
-                except (ValidationError, KeyError):
-                    continue
+            try:
+                app_data = relation.data[relation.app]
+                if app_data and "config" in app_data:
+                    requirers.append(
+                        DownloadClientRequirerData.model_validate_json(app_data["config"])
+                    )
+            except (ValidationError, KeyError):
+                continue
         return requirers
 
 
@@ -107,6 +109,9 @@ class DownloadClientRequirer(Object):
 
     def publish_data(self, data: DownloadClientRequirerData) -> None:
         """Publish requirer data to all relations."""
+        if not self._charm.unit.is_leader():
+            return
+
         for relation in self._charm.model.relations.get(self._relation_name, []):
             relation.data[self._charm.app]["config"] = data.model_dump_json()
 

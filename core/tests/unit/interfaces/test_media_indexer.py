@@ -279,3 +279,42 @@ def test_requirer_is_ready_false_no_provider_data():
 
     with ctx(ctx.on.start(), state_in) as mgr:
         assert mgr.charm.requirer.is_ready() is False
+
+
+def test_provider_publish_data_non_leader():
+    """Test provider doesn't publish data when not leader."""
+    ctx = Context(ProviderCharm, meta=ProviderCharm.META)
+    relation = Relation(endpoint="media-indexer", interface="media_indexer")
+    state_in = State(leader=False, relations=[relation])
+
+    with ctx(ctx.on.start(), state_in) as mgr:
+        data = MediaIndexerProviderData(
+            api_url="http://prowlarr:9696",
+            api_key_secret_id="secret://123",
+            indexer=MediaIndexer.PROWLARR,
+        )
+        mgr.charm.provider.publish_data(data)
+        state_out = mgr.run()
+
+    relation_out = state_out.get_relations(relation.endpoint)[0]
+    assert "config" not in relation_out.local_app_data
+
+
+def test_requirer_publish_data_non_leader():
+    """Test requirer doesn't publish data when not leader."""
+    ctx = Context(RequirerCharm, meta=RequirerCharm.META)
+    relation = Relation(endpoint="media-indexer", interface="media_indexer")
+    state_in = State(leader=False, relations=[relation])
+
+    with ctx(ctx.on.start(), state_in) as mgr:
+        data = MediaIndexerRequirerData(
+            api_url="http://radarr:7878",
+            api_key_secret_id="secret://456",
+            manager=MediaManager.RADARR,
+            instance_name="radarr-4k",
+        )
+        mgr.charm.requirer.publish_data(data)
+        state_out = mgr.run()
+
+    relation_out = state_out.get_relations(relation.endpoint)[0]
+    assert "config" not in relation_out.local_app_data
