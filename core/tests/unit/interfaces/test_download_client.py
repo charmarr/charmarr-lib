@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from scenario import Context, Relation, State
 
 from charmarr_lib.core import DownloadClient, DownloadClientType, MediaManager
-from charmarr_lib.core.interfaces.download_client import (
+from charmarr_lib.core.interfaces import (
     DownloadClientProvider,
     DownloadClientProviderData,
     DownloadClientRequirer,

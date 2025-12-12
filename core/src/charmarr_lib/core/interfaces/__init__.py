@@ -3,19 +3,26 @@
 
 """Juju relation interface implementations for Charmarr."""
 
-from charmarr_lib.core.interfaces.download_client import (
+from charmarr_lib.core.interfaces._download_client import (
     DownloadClientChangedEvent,
     DownloadClientProvider,
     DownloadClientProviderData,
     DownloadClientRequirer,
     DownloadClientRequirerData,
 )
-from charmarr_lib.core.interfaces.media_indexer import (
+from charmarr_lib.core.interfaces._media_indexer import (
     MediaIndexerChangedEvent,
     MediaIndexerProvider,
     MediaIndexerProviderData,
     MediaIndexerRequirer,
     MediaIndexerRequirerData,
+)
+from charmarr_lib.core.interfaces._media_storage import (
+    MediaStorageChangedEvent,
+    MediaStorageProvider,
+    MediaStorageProviderData,
+    MediaStorageRequirer,
+    MediaStorageRequirerData,
 )
 
 __all__ = [
@@ -29,4 +36,9 @@ __all__ = [
     "MediaIndexerProviderData",
     "MediaIndexerRequirer",
     "MediaIndexerRequirerData",
+    "MediaStorageChangedEvent",
+    "MediaStorageProvider",
+    "MediaStorageProviderData",
+    "MediaStorageRequirer",
+    "MediaStorageRequirerData",
 ]
