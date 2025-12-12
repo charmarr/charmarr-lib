@@ -18,6 +18,11 @@ from charmarr_lib.core.enums import (
     RequestManager,
 )
 from charmarr_lib.core.interfaces import (
+    DownloadClientChangedEvent,
+    DownloadClientProvider,
+    DownloadClientProviderData,
+    DownloadClientRequirer,
+    DownloadClientRequirerData,
     MediaIndexerChangedEvent,
     MediaIndexerProvider,
     MediaIndexerProviderData,
@@ -29,6 +34,11 @@ __all__ = [
     "MEDIA_MANAGER_IMPLEMENTATIONS",
     "MEDIA_TYPE_DOWNLOAD_PATHS",
     "DownloadClient",
+    "DownloadClientChangedEvent",
+    "DownloadClientProvider",
+    "DownloadClientProviderData",
+    "DownloadClientRequirer",
+    "DownloadClientRequirerData",
     "DownloadClientType",
     "MediaIndexer",
     "MediaIndexerChangedEvent",
