@@ -8,13 +8,12 @@ from typing import ClassVar
 from ops import CharmBase
 from scenario import Context, Relation, State
 
-from charmarr_lib.core import (
-    MediaIndexer,
+from charmarr_lib.core import MediaIndexer, MediaManager
+from charmarr_lib.core.interfaces import (
     MediaIndexerProvider,
     MediaIndexerProviderData,
     MediaIndexerRequirer,
     MediaIndexerRequirerData,
-    MediaManager,
 )
 
 

@@ -1,7 +1,7 @@
 """Core charm libraries for Charmarr media automation.
 
 This package provides:
-- Juju relation interfaces for media automation
+- Juju relation interfaces for media automation (from charmarr_lib.core.interfaces)
 - API clients for *arr applications
 - Reconcilers for managing application configuration
 """
@@ -44,18 +44,6 @@ from charmarr_lib.core.enums import (
     MediaManager,
     RequestManager,
 )
-from charmarr_lib.core.interfaces import (
-    DownloadClientChangedEvent,
-    DownloadClientProvider,
-    DownloadClientProviderData,
-    DownloadClientRequirer,
-    DownloadClientRequirerData,
-    MediaIndexerChangedEvent,
-    MediaIndexerProvider,
-    MediaIndexerProviderData,
-    MediaIndexerRequirer,
-    MediaIndexerRequirerData,
-)
 
 __all__ = [
     "MEDIA_MANAGER_IMPLEMENTATIONS",
@@ -67,23 +55,13 @@ __all__ = [
     "ArrApiError",
     "ArrApiResponseError",
     "DownloadClient",
-    "DownloadClientChangedEvent",
     "DownloadClientConfigBuilder",
-    "DownloadClientProvider",
-    "DownloadClientProviderData",
-    "DownloadClientRequirer",
-    "DownloadClientRequirerData",
     "DownloadClientResponse",
     "DownloadClientType",
     "HostConfigResponse",
     "IndexerResponse",
     "K8sResourceManager",
     "MediaIndexer",
-    "MediaIndexerChangedEvent",
-    "MediaIndexerProvider",
-    "MediaIndexerProviderData",
-    "MediaIndexerRequirer",
-    "MediaIndexerRequirerData",
     "MediaManager",
     "ProwlarrApiClient",
     "ProwlarrHostConfigResponse",
