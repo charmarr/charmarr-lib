@@ -26,6 +26,12 @@ from charmarr_lib.core._arr._prowlarr_client import (
     ProwlarrApiClient,
     ProwlarrHostConfigResponse,
 )
+from charmarr_lib.core._arr._reconcilers import (
+    reconcile_download_clients,
+    reconcile_external_url,
+    reconcile_media_manager_connections,
+    reconcile_root_folder,
+)
 
 __all__ = [
     "ApplicationConfigBuilder",
@@ -43,4 +49,8 @@ __all__ = [
     "QualityProfileResponse",
     "RootFolderResponse",
     "SecretGetter",
+    "reconcile_download_clients",
+    "reconcile_external_url",
+    "reconcile_media_manager_connections",
+    "reconcile_root_folder",
 ]

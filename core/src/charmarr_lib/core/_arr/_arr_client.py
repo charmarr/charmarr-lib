@@ -95,6 +95,14 @@ class ArrApiClient(BaseArrApiClient):
         """Get all configured download clients."""
         return self._get_validated_list("/downloadclient", DownloadClientResponse)
 
+    def get_download_client(self, client_id: int) -> dict[str, Any]:
+        """Get a download client by ID as raw dict.
+
+        Args:
+            client_id: ID of the download client
+        """
+        return self._get(f"/downloadclient/{client_id}")
+
     def add_download_client(self, config: dict[str, Any]) -> DownloadClientResponse:
         """Add a new download client.
 
@@ -150,6 +158,10 @@ class ArrApiClient(BaseArrApiClient):
     def get_host_config(self) -> HostConfigResponse:
         """Get host configuration."""
         return self._get_validated("/config/host", HostConfigResponse)
+
+    def get_host_config_raw(self) -> dict[str, Any]:
+        """Get host configuration as raw dict."""
+        return self._get("/config/host")
 
     def update_host_config(self, config: dict[str, Any]) -> HostConfigResponse:
         """Update host configuration.

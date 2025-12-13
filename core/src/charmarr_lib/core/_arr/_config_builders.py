@@ -7,7 +7,7 @@ from collections.abc import Callable
 from urllib.parse import urlparse
 
 from charmarr_lib.core.constants import MEDIA_MANAGER_IMPLEMENTATIONS
-from charmarr_lib.core.enums import DownloadClient
+from charmarr_lib.core.enums import DownloadClient, MediaManager
 from charmarr_lib.core.interfaces import (
     DownloadClientProviderData,
     MediaIndexerRequirerData,
@@ -16,6 +16,16 @@ from charmarr_lib.core.interfaces import (
 # Type alias for secret retrieval callback.
 # Takes secret_id, returns dict with secret content (e.g., {"username": "...", "password": "..."})
 SecretGetter = Callable[[str], dict[str, str]]
+
+# Maps media manager types to the category field name in download client API payloads.
+# Each *arr application uses a different field name for the download category.
+_MEDIA_MANAGER_CATEGORY_FIELDS: dict[MediaManager, str] = {
+    MediaManager.RADARR: "movieCategory",
+    MediaManager.SONARR: "tvCategory",
+    MediaManager.LIDARR: "musicCategory",
+    MediaManager.READARR: "bookCategory",
+    MediaManager.WHISPARR: "movieCategory",  # Uses same as Radarr
+}
 
 
 class DownloadClientConfigBuilder:
@@ -29,6 +39,7 @@ class DownloadClientConfigBuilder:
     def build(
         provider: DownloadClientProviderData,
         category: str,
+        media_manager: MediaManager,
         get_secret: SecretGetter,
     ) -> dict:
         """Transform relation data into *arr API payload.
@@ -36,6 +47,7 @@ class DownloadClientConfigBuilder:
         Args:
             provider: Download client relation data
             category: Category name for downloads (e.g., "radarr", "sonarr")
+            media_manager: The type of media manager calling this builder
             get_secret: Callback to retrieve secret content by ID
 
         Returns:
@@ -43,13 +55,18 @@ class DownloadClientConfigBuilder:
 
         Raises:
             ValueError: If client type is not supported
+            KeyError: If media_manager is not in category fields mapping
         """
+        category_field = _MEDIA_MANAGER_CATEGORY_FIELDS[media_manager]
+
         if provider.client == DownloadClient.QBITTORRENT:
             return DownloadClientConfigBuilder._build_qbittorrent(
-                provider, category, get_secret
+                provider, category, category_field, get_secret
             )
         elif provider.client == DownloadClient.SABNZBD:
-            return DownloadClientConfigBuilder._build_sabnzbd(provider, category, get_secret)
+            return DownloadClientConfigBuilder._build_sabnzbd(
+                provider, category, category_field, get_secret
+            )
         else:
             raise ValueError(f"Unsupported download client: {provider.client}")
 
@@ -57,6 +74,7 @@ class DownloadClientConfigBuilder:
     def _build_qbittorrent(
         provider: DownloadClientProviderData,
         category: str,
+        category_field: str,
         get_secret: SecretGetter,
     ) -> dict:
         """Build qBittorrent download client config."""
@@ -79,7 +97,7 @@ class DownloadClientConfigBuilder:
                 {"name": "urlBase", "value": provider.base_path or ""},
                 {"name": "username", "value": credentials["username"]},
                 {"name": "password", "value": credentials["password"]},
-                {"name": "category", "value": category},
+                {"name": category_field, "value": category},
             ],
             "tags": [],
         }
@@ -88,6 +106,7 @@ class DownloadClientConfigBuilder:
     def _build_sabnzbd(
         provider: DownloadClientProviderData,
         category: str,
+        category_field: str,
         get_secret: SecretGetter,
     ) -> dict:
         """Build SABnzbd download client config."""
@@ -110,7 +129,7 @@ class DownloadClientConfigBuilder:
                 {"name": "useSsl", "value": parsed.scheme == "https"},
                 {"name": "urlBase", "value": provider.base_path or ""},
                 {"name": "apiKey", "value": api_key},
-                {"name": "category", "value": category},
+                {"name": category_field, "value": category},
             ],
             "tags": [],
         }

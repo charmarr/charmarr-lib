@@ -88,6 +88,17 @@ class ProwlarrApiClient(BaseArrApiClient):
         """Get all configured applications (media manager connections)."""
         return self._get_validated_list("/application", ApplicationResponse)
 
+    def get_application(self, app_id: int) -> dict[str, Any]:
+        """Get a single application by ID as raw dict.
+
+        Returns the full API response including the fields array,
+        useful for comparing against desired configuration.
+
+        Args:
+            app_id: ID of the application
+        """
+        return self._get(f"/application/{app_id}")
+
     def add_application(self, config: dict[str, Any]) -> ApplicationResponse:
         """Add a new application.
 
@@ -129,6 +140,14 @@ class ProwlarrApiClient(BaseArrApiClient):
     def get_host_config(self) -> ProwlarrHostConfigResponse:
         """Get host configuration."""
         return self._get_validated("/config/host", ProwlarrHostConfigResponse)
+
+    def get_host_config_raw(self) -> dict[str, Any]:
+        """Get host configuration as raw dict.
+
+        Returns the full API response, useful for comparing against
+        desired configuration or merging updates.
+        """
+        return self._get("/config/host")
 
     def update_host_config(self, config: dict[str, Any]) -> ProwlarrHostConfigResponse:
         """Update host configuration.

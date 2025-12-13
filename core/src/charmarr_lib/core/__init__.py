@@ -22,6 +22,10 @@ from charmarr_lib.core._arr import (
     QualityProfileResponse,
     RootFolderResponse,
     SecretGetter,
+    reconcile_download_clients,
+    reconcile_external_url,
+    reconcile_media_manager_connections,
+    reconcile_root_folder,
 )
 from charmarr_lib.core.constants import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
@@ -80,4 +84,8 @@ __all__ = [
     "RequestManager",
     "RootFolderResponse",
     "SecretGetter",
+    "reconcile_download_clients",
+    "reconcile_external_url",
+    "reconcile_media_manager_connections",
+    "reconcile_root_folder",
 ]

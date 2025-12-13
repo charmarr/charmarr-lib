@@ -63,7 +63,9 @@ def mock_api_key(secret_id: str) -> dict:
 
 def test_qbittorrent_uses_correct_implementation(qbittorrent_provider):
     """qBittorrent config sets correct implementation and contract."""
-    result = DownloadClientConfigBuilder.build(qbittorrent_provider, "radarr", mock_credentials)
+    result = DownloadClientConfigBuilder.build(
+        qbittorrent_provider, "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     assert result["implementation"] == "QBittorrent"
     assert result["configContract"] == "QBittorrentSettings"
@@ -72,7 +74,9 @@ def test_qbittorrent_uses_correct_implementation(qbittorrent_provider):
 
 def test_qbittorrent_parses_url_components(qbittorrent_provider):
     """qBittorrent config extracts host/port from URL."""
-    result = DownloadClientConfigBuilder.build(qbittorrent_provider, "radarr", mock_credentials)
+    result = DownloadClientConfigBuilder.build(
+        qbittorrent_provider, "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     fields = {f["name"]: f["value"] for f in result["fields"]}
     assert fields["host"] == "qbittorrent"
@@ -82,19 +86,33 @@ def test_qbittorrent_parses_url_components(qbittorrent_provider):
 
 def test_qbittorrent_uses_credentials_from_secret(qbittorrent_provider):
     """qBittorrent config includes credentials from secret callback."""
-    result = DownloadClientConfigBuilder.build(qbittorrent_provider, "radarr", mock_credentials)
+    result = DownloadClientConfigBuilder.build(
+        qbittorrent_provider, "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     fields = {f["name"]: f["value"] for f in result["fields"]}
     assert fields["username"] == "admin"
     assert fields["password"] == "supersecret"
 
 
-def test_qbittorrent_sets_category(qbittorrent_provider):
-    """qBittorrent config sets category field from parameter."""
-    result = DownloadClientConfigBuilder.build(qbittorrent_provider, "sonarr", mock_credentials)
+def test_qbittorrent_sets_category_field_for_radarr(qbittorrent_provider):
+    """qBittorrent config uses movieCategory field for Radarr."""
+    result = DownloadClientConfigBuilder.build(
+        qbittorrent_provider, "radarr-1080p", MediaManager.RADARR, mock_credentials
+    )
 
     fields = {f["name"]: f["value"] for f in result["fields"]}
-    assert fields["category"] == "sonarr"
+    assert fields["movieCategory"] == "radarr-1080p"
+
+
+def test_qbittorrent_sets_category_field_for_sonarr(qbittorrent_provider):
+    """qBittorrent config uses tvCategory field for Sonarr."""
+    result = DownloadClientConfigBuilder.build(
+        qbittorrent_provider, "sonarr", MediaManager.SONARR, mock_credentials
+    )
+
+    fields = {f["name"]: f["value"] for f in result["fields"]}
+    assert fields["tvCategory"] == "sonarr"
 
 
 def test_qbittorrent_https_url():
@@ -107,7 +125,9 @@ def test_qbittorrent_https_url():
         instance_name="qbit",
     )
 
-    result = DownloadClientConfigBuilder.build(provider, "radarr", mock_credentials)
+    result = DownloadClientConfigBuilder.build(
+        provider, "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     fields = {f["name"]: f["value"] for f in result["fields"]}
     assert fields["useSsl"] is True
@@ -125,7 +145,9 @@ def test_qbittorrent_base_path():
         base_path="/qbit",
     )
 
-    result = DownloadClientConfigBuilder.build(provider, "radarr", mock_credentials)
+    result = DownloadClientConfigBuilder.build(
+        provider, "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     fields = {f["name"]: f["value"] for f in result["fields"]}
     assert fields["urlBase"] == "/qbit"
@@ -133,7 +155,9 @@ def test_qbittorrent_base_path():
 
 def test_sabnzbd_uses_correct_implementation(sabnzbd_provider):
     """SABnzbd config sets correct implementation and contract."""
-    result = DownloadClientConfigBuilder.build(sabnzbd_provider, "radarr", mock_api_key)
+    result = DownloadClientConfigBuilder.build(
+        sabnzbd_provider, "radarr", MediaManager.RADARR, mock_api_key
+    )
 
     assert result["implementation"] == "Sabnzbd"
     assert result["configContract"] == "SabnzbdSettings"
@@ -142,15 +166,29 @@ def test_sabnzbd_uses_correct_implementation(sabnzbd_provider):
 
 def test_sabnzbd_uses_api_key_from_secret(sabnzbd_provider):
     """SABnzbd config includes API key from secret callback."""
-    result = DownloadClientConfigBuilder.build(sabnzbd_provider, "radarr", mock_api_key)
+    result = DownloadClientConfigBuilder.build(
+        sabnzbd_provider, "radarr", MediaManager.RADARR, mock_api_key
+    )
 
     fields = {f["name"]: f["value"] for f in result["fields"]}
     assert fields["apiKey"] == "test-api-key-123"
 
 
+def test_sabnzbd_sets_category_field_for_lidarr(sabnzbd_provider):
+    """SABnzbd config uses musicCategory field for Lidarr."""
+    result = DownloadClientConfigBuilder.build(
+        sabnzbd_provider, "lidarr", MediaManager.LIDARR, mock_api_key
+    )
+
+    fields = {f["name"]: f["value"] for f in result["fields"]}
+    assert fields["musicCategory"] == "lidarr"
+
+
 def test_download_client_common_fields(qbittorrent_provider):
     """Download client config includes common fields."""
-    result = DownloadClientConfigBuilder.build(qbittorrent_provider, "radarr", mock_credentials)
+    result = DownloadClientConfigBuilder.build(
+        qbittorrent_provider, "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     assert result["enable"] is True
     assert result["priority"] == 1
