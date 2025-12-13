@@ -4,12 +4,13 @@
 
 # Charmarr Library Monorepo
 
-Shared libraries for Charmarr charms implementing Juju relations and reconcilers, distributed as three pip-installable packages from a single monorepo.
+Shared libraries for Charmarr charms implementing Juju relations and reconcilers, distributed as four pip-installable packages from a single monorepo.
 
 ## Packages
 
 - **charmarr-lib-core** - Core interfaces, API clients, and reconcilers
 - **charmarr-lib-vpn** - VPN gateway interface and pod-gateway integration
+- **charmarr-lib-krm** - Kubernetes Resource Manager with retry logic and reconciliation utilities
 - **charmarr-lib-testing** - Testing utilities and pytest-bdd step definitions
 
 ## Installation
@@ -17,6 +18,7 @@ Shared libraries for Charmarr charms implementing Juju relations and reconcilers
 ```bash
 pip install charmarr-lib-core
 pip install charmarr-lib-vpn
+pip install charmarr-lib-krm
 pip install charmarr-lib-testing
 ```
 
