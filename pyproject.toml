@@ -4,6 +4,7 @@ package = false
 [tool.uv.workspace]
 members = [
     "core",
+    "krm",
     "vpn",
     "testing",
 ]
@@ -56,7 +57,7 @@ indent-style = "space"
 line-ending = "lf"
 
 [tool.pyright]
-include = ["core/src", "vpn/src", "testing/src"]
+include = ["core/src", "krm/src", "vpn/src", "testing/src"]
 exclude = [
     "**/__pycache__",
     "**/.*",
@@ -81,7 +82,7 @@ reportUntypedFunctionDecorator = false
 reportUntypedClassDecorator = false
 
 [tool.coverage.run]
-source = ["core/src/charmarr_lib", "vpn/src/charmarr_lib", "testing/src/charmarr_lib"]
+source = ["core/src/charmarr_lib", "krm/src/charmarr_lib", "vpn/src/charmarr_lib", "testing/src/charmarr_lib"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 [manifest]
 members = [
     "charmarr-lib-core",
+    "charmarr-lib-krm",
     "charmarr-lib-testing",
     "charmarr-lib-vpn",
 ]
@@ -84,10 +85,40 @@ wheels = [
 name = "charmarr-lib-core"
 source = { editable = "core" }
 dependencies = [
+    { name = "charmarr-lib-krm" },
     { name = "httpx" },
     { name = "lightkube" },
     { name = "ops" },
     { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "charmarr-lib-krm", editable = "krm" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "lightkube", specifier = ">=0.15" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
+    { name = "ops", specifier = ">=2.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "charmarr-lib-krm"
+source = { editable = "krm" }
+dependencies = [
+    { name = "lightkube" },
     { name = "tenacity" },
 ]
 
@@ -101,11 +132,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
     { name = "lightkube", specifier = ">=0.15" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
-    { name = "ops", specifier = ">=2.0" },
-    { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
@@ -146,6 +174,7 @@ provides-extras = ["dev"]
 name = "charmarr-lib-vpn"
 source = { editable = "vpn" }
 dependencies = [
+    { name = "charmarr-lib-krm" },
     { name = "lightkube" },
     { name = "ops" },
     { name = "pydantic" },
@@ -161,6 +190,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "charmarr-lib-krm", editable = "krm" },
     { name = "lightkube", specifier = ">=0.15" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
     { name = "ops", specifier = ">=2.0" },
