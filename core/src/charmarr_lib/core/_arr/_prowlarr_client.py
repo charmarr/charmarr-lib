@@ -107,9 +107,7 @@ class ProwlarrApiClient(BaseArrApiClient):
         """
         return self._post_validated("/application", config, ApplicationResponse)
 
-    def update_application(
-        self, app_id: int, config: dict[str, Any]
-    ) -> ApplicationResponse:
+    def update_application(self, app_id: int, config: dict[str, Any]) -> ApplicationResponse:
         """Update an existing application.
 
         Args:
@@ -117,9 +115,7 @@ class ProwlarrApiClient(BaseArrApiClient):
             config: Updated application configuration
         """
         config_with_id = {**config, "id": app_id}
-        return self._put_validated(
-            f"/application/{app_id}", config_with_id, ApplicationResponse
-        )
+        return self._put_validated(f"/application/{app_id}", config_with_id, ApplicationResponse)
 
     def delete_application(self, app_id: int) -> None:
         """Delete an application.

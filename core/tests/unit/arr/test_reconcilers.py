@@ -85,7 +85,9 @@ def test_download_clients_deletes_removed(mock_arr_client):
     )
     mock_arr_client.get_download_clients.return_value = [existing]
 
-    reconcile_download_clients(mock_arr_client, [], "radarr", MediaManager.RADARR, mock_credentials)
+    reconcile_download_clients(
+        mock_arr_client, [], "radarr", MediaManager.RADARR, mock_credentials
+    )
 
     mock_arr_client.delete_download_client.assert_called_once_with(1)
 
@@ -177,7 +179,11 @@ def test_media_manager_connections_updates_when_changed(mock_prowlarr_client, ra
     """Updates application when config differs."""
     impl, contract = MEDIA_MANAGER_IMPLEMENTATIONS[MediaManager.RADARR]
     existing = ApplicationResponse(
-        id=1, name="radarr-1080p", syncLevel="fullSync", implementation=impl, configContract=contract
+        id=1,
+        name="radarr-1080p",
+        syncLevel="fullSync",
+        implementation=impl,
+        configContract=contract,
     )
     mock_prowlarr_client.get_applications.return_value = [existing]
     mock_prowlarr_client.get_application.return_value = {
