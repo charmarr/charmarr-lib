@@ -1,9 +1,0 @@
-# Copyright 2025 The Charmarr Project
-# See LICENSE file for licensing details.
-
-"""Placeholder test to validate test infrastructure for core package."""
-
-
-def test_core_placeholder() -> None:
-    """Placeholder test that always passes."""
-    assert True

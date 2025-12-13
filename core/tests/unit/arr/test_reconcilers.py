@@ -3,14 +3,8 @@
 
 """Unit tests for reconcilers."""
 
-from unittest.mock import MagicMock
-
-import pytest
-
 from charmarr_lib.core import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
-    DownloadClient,
-    DownloadClientType,
     MediaManager,
     reconcile_download_clients,
     reconcile_external_url,
@@ -19,55 +13,11 @@ from charmarr_lib.core import (
 )
 from charmarr_lib.core._arr._arr_client import DownloadClientResponse, RootFolderResponse
 from charmarr_lib.core._arr._prowlarr_client import ApplicationResponse
-from charmarr_lib.core.interfaces import (
-    DownloadClientProviderData,
-    MediaIndexerRequirerData,
-)
-
-
-@pytest.fixture
-def mock_arr_client():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_prowlarr_client():
-    return MagicMock()
-
-
-@pytest.fixture
-def qbittorrent_provider():
-    return DownloadClientProviderData(
-        api_url="http://qbittorrent:8080",
-        credentials_secret_id="secret:qbit-creds",
-        client=DownloadClient.QBITTORRENT,
-        client_type=DownloadClientType.TORRENT,
-        instance_name="qbittorrent",
-    )
-
-
-@pytest.fixture
-def radarr_requirer():
-    return MediaIndexerRequirerData(
-        api_url="http://radarr:7878",
-        api_key_secret_id="secret:radarr-key",
-        manager=MediaManager.RADARR,
-        instance_name="radarr-1080p",
-    )
-
-
-def mock_credentials(secret_id: str) -> dict:
-    return {"username": "admin", "password": "secret"}
-
-
-def mock_api_key(secret_id: str) -> dict:
-    return {"api-key": "test-api-key"}
-
 
 # reconcile_download_clients
 
 
-def test_download_clients_adds_new(mock_arr_client, qbittorrent_provider):
+def test_download_clients_adds_new(mock_arr_client, qbittorrent_provider, mock_credentials):
     """Adds download client when not present."""
     mock_arr_client.get_download_clients.return_value = []
 
@@ -78,7 +28,7 @@ def test_download_clients_adds_new(mock_arr_client, qbittorrent_provider):
     mock_arr_client.add_download_client.assert_called_once()
 
 
-def test_download_clients_deletes_removed(mock_arr_client):
+def test_download_clients_deletes_removed(mock_arr_client, mock_credentials):
     """Deletes download client not in desired list."""
     existing = DownloadClientResponse(
         id=1, name="old-client", enable=True, protocol="torrent", implementation="QBittorrent"
@@ -92,7 +42,9 @@ def test_download_clients_deletes_removed(mock_arr_client):
     mock_arr_client.delete_download_client.assert_called_once_with(1)
 
 
-def test_download_clients_updates_when_changed(mock_arr_client, qbittorrent_provider):
+def test_download_clients_updates_when_changed(
+    mock_arr_client, qbittorrent_provider, mock_credentials
+):
     """Updates download client when config differs."""
     existing = DownloadClientResponse(
         id=1, name="qbittorrent", enable=True, protocol="torrent", implementation="QBittorrent"
@@ -115,7 +67,7 @@ def test_download_clients_updates_when_changed(mock_arr_client, qbittorrent_prov
     mock_arr_client.update_download_client.assert_called_once()
 
 
-def test_download_clients_skips_unchanged(mock_arr_client, qbittorrent_provider):
+def test_download_clients_skips_unchanged(mock_arr_client, qbittorrent_provider, mock_credentials):
     """Skips update when config matches."""
     existing = DownloadClientResponse(
         id=1, name="qbittorrent", enable=True, protocol="torrent", implementation="QBittorrent"
@@ -134,7 +86,7 @@ def test_download_clients_skips_unchanged(mock_arr_client, qbittorrent_provider)
             {"name": "useSsl", "value": False},
             {"name": "urlBase", "value": ""},
             {"name": "username", "value": "admin"},
-            {"name": "password", "value": "secret"},
+            {"name": "password", "value": "supersecret"},
             {"name": "movieCategory", "value": "radarr"},
         ],
     }
@@ -149,7 +101,7 @@ def test_download_clients_skips_unchanged(mock_arr_client, qbittorrent_provider)
 # reconcile_media_manager_connections
 
 
-def test_media_manager_connections_adds_new(mock_prowlarr_client, radarr_requirer):
+def test_media_manager_connections_adds_new(mock_prowlarr_client, radarr_requirer, mock_api_key):
     """Adds application when not present."""
     mock_prowlarr_client.get_applications.return_value = []
 
@@ -160,7 +112,7 @@ def test_media_manager_connections_adds_new(mock_prowlarr_client, radarr_require
     mock_prowlarr_client.add_application.assert_called_once()
 
 
-def test_media_manager_connections_deletes_removed(mock_prowlarr_client):
+def test_media_manager_connections_deletes_removed(mock_prowlarr_client, mock_api_key):
     """Deletes application not in desired list."""
     impl, contract = MEDIA_MANAGER_IMPLEMENTATIONS[MediaManager.RADARR]
     existing = ApplicationResponse(
@@ -175,7 +127,9 @@ def test_media_manager_connections_deletes_removed(mock_prowlarr_client):
     mock_prowlarr_client.delete_application.assert_called_once_with(1)
 
 
-def test_media_manager_connections_updates_when_changed(mock_prowlarr_client, radarr_requirer):
+def test_media_manager_connections_updates_when_changed(
+    mock_prowlarr_client, radarr_requirer, mock_api_key
+):
     """Updates application when config differs."""
     impl, contract = MEDIA_MANAGER_IMPLEMENTATIONS[MediaManager.RADARR]
     existing = ApplicationResponse(

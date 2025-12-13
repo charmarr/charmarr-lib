@@ -140,9 +140,7 @@ def _build_kill_switch_policy(config: KillSwitchConfig) -> NetworkPolicy:
             namespace=config.namespace,
         ),
         spec=NetworkPolicySpec(
-            podSelector=LabelSelector(
-                matchLabels={"app.kubernetes.io/name": config.app_name}
-            ),
+            podSelector=LabelSelector(matchLabels={"app.kubernetes.io/name": config.app_name}),
             policyTypes=["Egress"],
             egress=egress_rules,
         ),

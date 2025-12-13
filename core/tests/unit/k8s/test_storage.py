@@ -3,61 +3,18 @@
 
 """Unit tests for storage volume reconciliation."""
 
-from unittest.mock import MagicMock
-
-import pytest
-from lightkube.models.apps_v1 import StatefulSet, StatefulSetSpec
 from lightkube.models.core_v1 import (
-    Container,
     PersistentVolumeClaimVolumeSource,
-    PodSpec,
-    PodTemplateSpec,
     Volume,
     VolumeMount,
 )
-from lightkube.models.meta_v1 import LabelSelector, ObjectMeta
 
-from charmarr_lib.core import (
-    K8sResourceManager,
-    is_storage_mounted,
-    reconcile_storage_volume,
-)
-
-
-@pytest.fixture
-def mock_client():
-    return MagicMock()
-
-
-@pytest.fixture
-def manager(mock_client):
-    return K8sResourceManager(client=mock_client)
-
-
-def make_statefulset(
-    volumes: list | None = None, container_mounts: list | None = None
-) -> StatefulSet:
-    """Create a StatefulSet with optional volumes and mounts."""
-    container = Container(name="radarr", volumeMounts=container_mounts or [])
-    return StatefulSet(
-        metadata=ObjectMeta(name="radarr", namespace="media"),
-        spec=StatefulSetSpec(
-            selector=LabelSelector(matchLabels={"app": "radarr"}),
-            serviceName="radarr",
-            template=PodTemplateSpec(
-                spec=PodSpec(
-                    containers=[container],
-                    volumes=volumes or [],
-                )
-            ),
-        ),
-    )
-
+from charmarr_lib.core import is_storage_mounted, reconcile_storage_volume
 
 # is_storage_mounted
 
 
-def test_is_storage_mounted_true_when_both_exist():
+def test_is_storage_mounted_true_when_both_exist(make_statefulset):
     """Returns True when volume and mount both exist."""
     volume = Volume(
         name="charmarr-shared-data",
@@ -69,7 +26,7 @@ def test_is_storage_mounted_true_when_both_exist():
     assert is_storage_mounted(sts, "radarr") is True
 
 
-def test_is_storage_mounted_false_when_no_volume():
+def test_is_storage_mounted_false_when_no_volume(make_statefulset):
     """Returns False when volume doesn't exist."""
     mount = VolumeMount(name="charmarr-shared-data", mountPath="/data")
     sts = make_statefulset(volumes=[], container_mounts=[mount])
@@ -77,7 +34,7 @@ def test_is_storage_mounted_false_when_no_volume():
     assert is_storage_mounted(sts, "radarr") is False
 
 
-def test_is_storage_mounted_false_when_no_mount():
+def test_is_storage_mounted_false_when_no_mount(make_statefulset):
     """Returns False when mount doesn't exist."""
     volume = Volume(
         name="charmarr-shared-data",
@@ -88,7 +45,7 @@ def test_is_storage_mounted_false_when_no_mount():
     assert is_storage_mounted(sts, "radarr") is False
 
 
-def test_is_storage_mounted_false_when_wrong_container():
+def test_is_storage_mounted_false_when_wrong_container(make_statefulset):
     """Returns False when checking wrong container name."""
     volume = Volume(
         name="charmarr-shared-data",
@@ -103,7 +60,7 @@ def test_is_storage_mounted_false_when_wrong_container():
 # reconcile_storage_volume
 
 
-def test_reconcile_patches_when_not_mounted(manager, mock_client):
+def test_reconcile_patches_when_not_mounted(manager, mock_client, make_statefulset):
     """Patches StatefulSet when storage not mounted."""
     mock_client.get.return_value = make_statefulset()
 
@@ -119,7 +76,7 @@ def test_reconcile_patches_when_not_mounted(manager, mock_client):
     mock_client.patch.assert_called_once()
 
 
-def test_reconcile_skips_when_already_mounted(manager, mock_client):
+def test_reconcile_skips_when_already_mounted(manager, mock_client, make_statefulset):
     """Skips patching when storage already mounted."""
     volume = Volume(
         name="charmarr-shared-data",
@@ -140,7 +97,7 @@ def test_reconcile_skips_when_already_mounted(manager, mock_client):
     mock_client.patch.assert_not_called()
 
 
-def test_reconcile_patch_contains_volume_and_mount(manager, mock_client):
+def test_reconcile_patch_contains_volume_and_mount(manager, mock_client, make_statefulset):
     """Patch includes both volume and volumeMount."""
     mock_client.get.return_value = make_statefulset()
 
@@ -166,7 +123,7 @@ def test_reconcile_patch_contains_volume_and_mount(manager, mock_client):
     assert containers[0]["volumeMounts"][0]["mountPath"] == "/data"
 
 
-def test_reconcile_uses_custom_volume_name(manager, mock_client):
+def test_reconcile_uses_custom_volume_name(manager, mock_client, make_statefulset):
     """Supports custom volume name."""
     mock_client.get.return_value = make_statefulset()
 

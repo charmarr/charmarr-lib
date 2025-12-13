@@ -3,14 +3,8 @@
 
 """Unit tests for gateway client StatefulSet patching."""
 
-from unittest.mock import MagicMock
+from lightkube.models.core_v1 import Container
 
-import pytest
-from lightkube.models.apps_v1 import StatefulSet, StatefulSetSpec
-from lightkube.models.core_v1 import Container, PodSpec, PodTemplateSpec
-from lightkube.models.meta_v1 import LabelSelector, ObjectMeta
-
-from charmarr_lib.krm import K8sResourceManager
 from charmarr_lib.vpn import (
     CLIENT_INIT_CONTAINER_NAME,
     CLIENT_SIDECAR_CONTAINER_NAME,
@@ -20,80 +14,40 @@ from charmarr_lib.vpn import (
     is_gateway_client_patched,
     reconcile_gateway_client,
 )
-from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
-
-
-@pytest.fixture
-def mock_client():
-    return MagicMock()
-
-
-@pytest.fixture
-def manager(mock_client):
-    return K8sResourceManager(client=mock_client)
-
-
-@pytest.fixture
-def provider_data():
-    return VPNGatewayProviderData(
-        gateway_dns_name="gluetun.vpn-gateway.svc.cluster.local",
-        cluster_cidrs="10.1.0.0/16,10.152.183.0/24",
-        vpn_connected=True,
-        instance_name="gluetun",
-    )
-
-
-def make_statefulset(
-    init_containers: list | None = None,
-    containers: list | None = None,
-) -> StatefulSet:
-    """Create a StatefulSet with optional init containers and containers."""
-    return StatefulSet(
-        metadata=ObjectMeta(name="qbittorrent", namespace="downloads"),
-        spec=StatefulSetSpec(
-            selector=LabelSelector(matchLabels={"app": "qbittorrent"}),
-            serviceName="qbittorrent",
-            template=PodTemplateSpec(
-                spec=PodSpec(
-                    containers=containers or [Container(name="qbittorrent")],
-                    initContainers=init_containers,
-                )
-            ),
-        ),
-    )
-
 
 # is_gateway_client_patched
 
 
-def test_is_gateway_client_patched_true_when_both_exist():
+def test_is_gateway_client_patched_true_when_both_exist(make_statefulset):
     """Returns True when init and sidecar containers both exist."""
     init = Container(name=CLIENT_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
     sidecar = Container(name=CLIENT_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(init_containers=[init], containers=[sidecar])
+    sts = make_statefulset(
+        name="qbittorrent", namespace="downloads", init_containers=[init], containers=[sidecar]
+    )
 
     assert is_gateway_client_patched(sts) is True
 
 
-def test_is_gateway_client_patched_false_when_no_init():
+def test_is_gateway_client_patched_false_when_no_init(make_statefulset):
     """Returns False when init container missing."""
     sidecar = Container(name=CLIENT_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(containers=[sidecar])
+    sts = make_statefulset(name="qbittorrent", namespace="downloads", containers=[sidecar])
 
     assert is_gateway_client_patched(sts) is False
 
 
-def test_is_gateway_client_patched_false_when_no_sidecar():
+def test_is_gateway_client_patched_false_when_no_sidecar(make_statefulset):
     """Returns False when sidecar container missing."""
     init = Container(name=CLIENT_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(init_containers=[init])
+    sts = make_statefulset(name="qbittorrent", namespace="downloads", init_containers=[init])
 
     assert is_gateway_client_patched(sts) is False
 
 
-def test_is_gateway_client_patched_false_when_empty():
+def test_is_gateway_client_patched_false_when_empty(make_statefulset):
     """Returns False when no pod-gateway containers."""
-    sts = make_statefulset()
+    sts = make_statefulset(name="qbittorrent", namespace="downloads")
 
     assert is_gateway_client_patched(sts) is False
 
@@ -142,8 +96,13 @@ def test_build_gateway_client_patch_includes_gateway_env(provider_data):
     """Containers have gateway env var pointing to gateway DNS name."""
     patch = build_gateway_client_patch(provider_data, "vpn-config")
 
-    init_env = {e["name"]: e["value"] for e in patch["spec"]["template"]["spec"]["initContainers"][0]["env"]}
-    sidecar_env = {e["name"]: e["value"] for e in patch["spec"]["template"]["spec"]["containers"][0]["env"]}
+    init_env = {
+        e["name"]: e["value"]
+        for e in patch["spec"]["template"]["spec"]["initContainers"][0]["env"]
+    }
+    sidecar_env = {
+        e["name"]: e["value"] for e in patch["spec"]["template"]["spec"]["containers"][0]["env"]
+    }
 
     assert init_env["gateway"] == "gluetun.vpn-gateway.svc.cluster.local"
     assert sidecar_env["gateway"] == "gluetun.vpn-gateway.svc.cluster.local"
@@ -175,9 +134,11 @@ def test_build_gateway_client_patch_mounts_config_volume(provider_data):
 # reconcile_gateway_client
 
 
-def test_reconcile_gateway_client_patches_when_not_patched(manager, mock_client, provider_data):
+def test_reconcile_gateway_client_patches_when_not_patched(
+    manager, mock_client, provider_data, make_statefulset
+):
     """Patches StatefulSet when gateway client containers not present."""
-    mock_client.get.return_value = make_statefulset()
+    mock_client.get.return_value = make_statefulset(name="qbittorrent", namespace="downloads")
 
     result = reconcile_gateway_client(
         manager,
@@ -191,11 +152,15 @@ def test_reconcile_gateway_client_patches_when_not_patched(manager, mock_client,
     mock_client.patch.assert_called_once()
 
 
-def test_reconcile_gateway_client_skips_when_already_patched(manager, mock_client, provider_data):
+def test_reconcile_gateway_client_skips_when_already_patched(
+    manager, mock_client, provider_data, make_statefulset
+):
     """Skips patching when gateway client containers already present."""
     init = Container(name=CLIENT_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
     sidecar = Container(name=CLIENT_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    mock_client.get.return_value = make_statefulset(init_containers=[init], containers=[sidecar])
+    mock_client.get.return_value = make_statefulset(
+        name="qbittorrent", namespace="downloads", init_containers=[init], containers=[sidecar]
+    )
 
     result = reconcile_gateway_client(
         manager,
@@ -209,9 +174,11 @@ def test_reconcile_gateway_client_skips_when_already_patched(manager, mock_clien
     mock_client.patch.assert_not_called()
 
 
-def test_reconcile_gateway_client_returns_message(manager, mock_client, provider_data):
+def test_reconcile_gateway_client_returns_message(
+    manager, mock_client, provider_data, make_statefulset
+):
     """Returns descriptive message on success."""
-    mock_client.get.return_value = make_statefulset()
+    mock_client.get.return_value = make_statefulset(name="qbittorrent", namespace="downloads")
 
     result = reconcile_gateway_client(
         manager,

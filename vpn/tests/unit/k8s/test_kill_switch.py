@@ -86,7 +86,9 @@ def test_build_policy_egress_dns(config):
 
 def test_reconcile_creates_policy(manager, mock_client, config):
     """Creates policy when it doesn't exist."""
-    mock_client.get.side_effect = ApiError(response=Response(404, json={"code": 404, "message": "not found"}))
+    mock_client.get.side_effect = ApiError(
+        response=Response(404, json={"code": 404, "message": "not found"})
+    )
 
     result = reconcile_kill_switch(manager, "qbittorrent", "downloads", config)
 
@@ -118,7 +120,9 @@ def test_reconcile_deletes_policy_when_config_none(manager, mock_client):
 
 def test_reconcile_noop_when_config_none_and_not_exists(manager, mock_client):
     """No-op when config is None and policy doesn't exist."""
-    mock_client.get.side_effect = ApiError(response=Response(404, json={"code": 404, "message": "not found"}))
+    mock_client.get.side_effect = ApiError(
+        response=Response(404, json={"code": 404, "message": "not found"})
+    )
 
     result = reconcile_kill_switch(manager, "qbittorrent", "downloads", config=None)
 
