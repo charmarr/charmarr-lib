@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "charmarr-lib-krm>=0.1",
     "ops>=2.0",
     "pydantic>=2.0",
     "lightkube>=0.15",
@@ -38,3 +39,6 @@ packages = ["src/charmarr_lib"]
 
 [tool.hatch.version]
 path = "src/charmarr_lib/vpn/_version.py"
+
+[tool.uv.sources]
+charmarr-lib-krm = { workspace = true }
