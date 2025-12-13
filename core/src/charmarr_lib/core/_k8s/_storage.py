@@ -34,8 +34,6 @@ Critical gotcha:
 See ADR: storage/adr-003-pvc-patching-in-arr-charms.md
 """
 
-from dataclasses import dataclass
-
 from lightkube.models.apps_v1 import StatefulSet
 from lightkube.models.core_v1 import (
     Container,
@@ -44,18 +42,10 @@ from lightkube.models.core_v1 import (
     VolumeMount,
 )
 
-from charmarr_lib.core._k8s._manager import K8sResourceManager
+from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 
 _DEFAULT_VOLUME_NAME = "charmarr-shared-data"
 _DEFAULT_MOUNT_PATH = "/data"
-
-
-@dataclass(frozen=True)
-class ReconcileResult:
-    """Result of a reconcile operation."""
-
-    changed: bool
-    message: str
 
 
 def _has_volume(sts: StatefulSet, volume_name: str) -> bool:
