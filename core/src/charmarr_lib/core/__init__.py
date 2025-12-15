@@ -1,3 +1,6 @@
+# Copyright 2025 The Charmarr Project
+# See LICENSE file for licensing details.
+
 """Core charm libraries for Charmarr media automation.
 
 This package provides:
