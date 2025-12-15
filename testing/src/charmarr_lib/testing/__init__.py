@@ -2,8 +2,13 @@
 
 This package provides:
 - TFManager for Terraform-based integration testing
-- pytest-bdd step definitions for common scenarios
-- Testing fixtures and utilities
+- wait_for_active_idle for Juju model stabilization
 """
 
-__all__: list[str] = []
+from charmarr_lib.testing._juju import wait_for_active_idle
+from charmarr_lib.testing._terraform import TFManager
+
+__all__ = [
+    "TFManager",
+    "wait_for_active_idle",
+]
