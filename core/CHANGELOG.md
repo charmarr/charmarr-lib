@@ -1,0 +1,16 @@
+# Changelog
+
+## [0.2.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.1.0...charmarr-lib-core-v0.2.0) (2025-12-15)
+
+
+### Features
+
+* adds arr specific http clients for core lib ([3d4af88](https://github.com/charmarr/charmarr-lib/commit/3d4af88807daf5d92be0146024f7d8863160eaa4))
+* adds base http client class for core lib ([133e484](https://github.com/charmarr/charmarr-lib/commit/133e484e8127d3b99097d1c4819106c3c066573e))
+* adds dev envs for charmarr lib packages ([b8ee5b2](https://github.com/charmarr/charmarr-lib/commit/b8ee5b29bf07a9c4e53a5443da3742c62ec4191c))
+* adds download client interfaces ([c638bb2](https://github.com/charmarr/charmarr-lib/commit/c638bb2ccbaafce8ecd2cf4396104f7712c5c770))
+* adds media indexer interfaces ([58c1304](https://github.com/charmarr/charmarr-lib/commit/58c1304143662c2b24deef5c153812dff27c8360))
+* adds media manager core lib ([d82a7fd](https://github.com/charmarr/charmarr-lib/commit/d82a7fdb3450082493f547f32f8d6303a26bbc0d))
+* adds media storage core lib ([757cb6d](https://github.com/charmarr/charmarr-lib/commit/757cb6d9be13217e36057752cabe6bf2c9cc3174))
+* adds payload builders for arr calls in core lib ([3a09022](https://github.com/charmarr/charmarr-lib/commit/3a09022277b85d7b1a7e9589eced15f674d1d7d2))
+* scaffolds monorepo with required packages ([eca8d38](https://github.com/charmarr/charmarr-lib/commit/eca8d38bec8f03dcabd4363b84e1743e495fed4c))
