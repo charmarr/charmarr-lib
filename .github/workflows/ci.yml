@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      krm: ${{ steps.filter.outputs.krm }}
+      vpn: ${{ steps.filter.outputs.vpn }}
+      testing: ${{ steps.filter.outputs.testing }}
+      any: ${{ steps.filter.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'core/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            krm:
+              - 'krm/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            vpn:
+              - 'vpn/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            testing:
+              - 'testing/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            any:
+              - '**/*.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+
+  core:
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: charmarr/.github/actions/lib/setup@v1
+      - uses: charmarr/.github/actions/lib/quality@v1
+        with:
+          paths: 'core/src core/tests'
+          test-paths: 'core/tests/unit'
+          coverage-source: 'core/src/charmarr_lib'
+
+  krm:
+    needs: changes
+    if: needs.changes.outputs.krm == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: charmarr/.github/actions/lib/setup@v1
+      - uses: charmarr/.github/actions/lib/quality@v1
+        with:
+          paths: 'krm/src krm/tests'
+          test-paths: 'krm/tests/unit'
+          coverage-source: 'krm/src/charmarr_lib'
+
+  vpn:
+    needs: changes
+    if: needs.changes.outputs.vpn == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: charmarr/.github/actions/lib/setup@v1
+      - uses: charmarr/.github/actions/lib/quality@v1
+        with:
+          paths: 'vpn/src vpn/tests'
+          test-paths: 'vpn/tests/unit'
+          coverage-source: 'vpn/src/charmarr_lib'
+
+  testing:
+    needs: changes
+    if: needs.changes.outputs.testing == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: charmarr/.github/actions/lib/setup@v1
+      - uses: charmarr/.github/actions/lib/quality@v1
+        with:
+          paths: 'testing/src testing/tests'
+          test-paths: 'testing/tests/unit'
+          coverage-source: 'testing/src/charmarr_lib'
+
+  status:
+    runs-on: ubuntu-latest
+    needs: [changes, core, krm, vpn, testing]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.changes.outputs.any }}" != "true" ]; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          failed=false
+          for pkg in core krm vpn testing; do
+            result=$(echo '${{ toJson(needs) }}' | jq -r ".${pkg}.result // \"skipped\"")
+            if [ "$result" = "failure" ]; then
+              echo "::error::${pkg} checks failed"
+              failed=true
+            fi
+          done
+
+          if [ "$failed" = "true" ]; then
+            exit 1
+          fi
