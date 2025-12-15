@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    "core": {
+      "release-type": "python",
+      "package-name": "charmarr-lib-core",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "krm": {
+      "release-type": "python",
+      "package-name": "charmarr-lib-krm",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "vpn": {
+      "release-type": "python",
+      "package-name": "charmarr-lib-vpn",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "testing": {
+      "release-type": "python",
+      "package-name": "charmarr-lib-testing",
+      "changelog-path": "CHANGELOG.md"
+    }
+  },
+  "group-primary-package": "core",
+  "separate-pull-requests": false
+}

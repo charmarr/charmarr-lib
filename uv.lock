@@ -145,6 +145,7 @@ provides-extras = ["dev"]
 name = "charmarr-lib-testing"
 source = { editable = "testing" }
 dependencies = [
+    { name = "jubilant" },
     { name = "ops" },
     { name = "pytest" },
     { name = "pytest-bdd" },
@@ -160,6 +161,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "jubilant", specifier = ">=1.6" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
     { name = "ops", specifier = ">=2.0" },
     { name = "pytest", specifier = ">=8.0" },
