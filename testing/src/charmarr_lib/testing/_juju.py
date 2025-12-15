@@ -1,3 +1,6 @@
+# Copyright 2025 The Charmarr Project
+# See LICENSE file for licensing details.
+
 """Jubilant integration helpers for Juju testing."""
 
 from typing import TYPE_CHECKING

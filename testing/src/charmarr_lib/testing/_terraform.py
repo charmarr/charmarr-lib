@@ -1,3 +1,6 @@
+# Copyright 2025 The Charmarr Project
+# See LICENSE file for licensing details.
+
 """Terraform/OpenTofu wrapper for integration testing."""
 
 import logging
