@@ -1,7 +1,7 @@
 # Copyright 2025 The Charmarr Project
 # See LICENSE file for licensing details.
 
-"""API clients, config builders, and reconcilers for *arr applications."""
+"""API clients, config builders, and reconcilers for *ARR applications."""
 
 from charmarr_lib.core._arr._arr_client import (
     ArrApiClient,
