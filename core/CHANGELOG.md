@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.0...charmarr-lib-core-v0.2.1) (2025-12-16)
+
+
+### Bug Fixes
+
+* **core:** fixes release please process ([c1c9c37](https://github.com/charmarr/charmarr-lib/commit/c1c9c3708a2a391a6b5807b8b3b5d88632fcb386))
+
 ## [0.2.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.1.0...charmarr-lib-core-v0.2.0) (2025-12-15)
 
 
