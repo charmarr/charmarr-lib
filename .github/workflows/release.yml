@@ -41,7 +41,7 @@ jobs:
         with:
           enable-cache: true
       - name: Build package
-        run: uv build --package charmarr-lib-core
+        run: uv build --package charmarr-lib-core --out-dir core/dist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -58,7 +58,7 @@ jobs:
         with:
           enable-cache: true
       - name: Build package
-        run: uv build --package charmarr-lib-krm
+        run: uv build --package charmarr-lib-krm --out-dir krm/dist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -75,7 +75,7 @@ jobs:
         with:
           enable-cache: true
       - name: Build package
-        run: uv build --package charmarr-lib-vpn
+        run: uv build --package charmarr-lib-vpn --out-dir vpn/dist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -92,7 +92,7 @@ jobs:
         with:
           enable-cache: true
       - name: Build package
-        run: uv build --package charmarr-lib-testing
+        run: uv build --package charmarr-lib-testing --out-dir testing/dist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
