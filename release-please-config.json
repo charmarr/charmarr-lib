@@ -4,22 +4,46 @@
     "core": {
       "release-type": "python",
       "package-name": "charmarr-lib-core",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/charmarr_lib/core/_version.py"
+        }
+      ]
     },
     "krm": {
       "release-type": "python",
       "package-name": "charmarr-lib-krm",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/charmarr_lib/krm/_version.py"
+        }
+      ]
     },
     "vpn": {
       "release-type": "python",
       "package-name": "charmarr-lib-vpn",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/charmarr_lib/vpn/_version.py"
+        }
+      ]
     },
     "testing": {
       "release-type": "python",
       "package-name": "charmarr-lib-testing",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/charmarr_lib/testing/_version.py"
+        }
+      ]
     }
   },
   "group-primary-package": "core",
