@@ -110,7 +110,3 @@ result = reconcile_storage_volume(
     mount_path="/data",
 )
 ```
-
-## License
-
-LGPL-3.0-or-later
