@@ -26,7 +26,7 @@ jobs:
       testing: ${{ steps.filter.outputs.testing }}
       any: ${{ steps.filter.outputs.any }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -57,7 +57,7 @@ jobs:
     if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: charmarr/.github/actions/lib/setup@v1
       - uses: charmarr/.github/actions/lib/quality@v1
         with:
@@ -70,7 +70,7 @@ jobs:
     if: needs.changes.outputs.krm == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: charmarr/.github/actions/lib/setup@v1
       - uses: charmarr/.github/actions/lib/quality@v1
         with:
@@ -83,7 +83,7 @@ jobs:
     if: needs.changes.outputs.vpn == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: charmarr/.github/actions/lib/setup@v1
       - uses: charmarr/.github/actions/lib/quality@v1
         with:
@@ -96,7 +96,7 @@ jobs:
     if: needs.changes.outputs.testing == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: charmarr/.github/actions/lib/setup@v1
       - uses: charmarr/.github/actions/lib/quality@v1
         with:
