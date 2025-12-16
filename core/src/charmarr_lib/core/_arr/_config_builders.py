@@ -78,7 +78,8 @@ class DownloadClientConfigBuilder:
         get_secret: SecretGetter,
     ) -> dict:
         """Build qBittorrent download client config."""
-        assert provider.credentials_secret_id is not None
+        if provider.credentials_secret_id is None:
+            raise ValueError("qBittorrent requires credentials_secret_id")
         credentials = get_secret(provider.credentials_secret_id)
 
         parsed = urlparse(provider.api_url)
@@ -110,7 +111,8 @@ class DownloadClientConfigBuilder:
         get_secret: SecretGetter,
     ) -> dict:
         """Build SABnzbd download client config."""
-        assert provider.api_key_secret_id is not None
+        if provider.api_key_secret_id is None:
+            raise ValueError("SABnzbd requires api_key_secret_id")
         secret = get_secret(provider.api_key_secret_id)
         api_key = secret["api-key"]
 
