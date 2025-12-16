@@ -1,4 +1,8 @@
-# charmarr-lib-vpn
+<p align="center">
+  <img src="../assets/charmarr-charmarr-lib.png" width="350" alt="Charmarr Lib">
+</p>
+
+<h1 align="center">charmarr-lib-vpn</h1>
 
 VPN gateway charm library for Kubernetes.
 
