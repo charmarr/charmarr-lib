@@ -114,7 +114,3 @@ from charmarr_lib.vpn import (
     CLIENT_SIDECAR_CONTAINER_NAME,
 )
 ```
-
-## License
-
-LGPL-3.0-or-later
