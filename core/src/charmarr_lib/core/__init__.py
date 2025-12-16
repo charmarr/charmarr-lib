@@ -1,13 +1,7 @@
 # Copyright 2025 The Charmarr Project
 # See LICENSE file for licensing details.
 
-"""Core charm libraries for Charmarr media automation.
-
-This package provides:
-- Juju relation interfaces for media automation (from charmarr_lib.core.interfaces)
-- API clients for *arr applications
-- Reconcilers for managing application configuration
-"""
+"""Core charm libraries for Charmarr media automation."""
 
 from charmarr_lib.core._arr import (
     ApplicationConfigBuilder,
