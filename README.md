@@ -81,6 +81,9 @@ uv venv && source .venv/bin/activate
 # Install dependencies
 uv sync
 
+# Install pre-commit hooks
+pre-commit install -t pre-commit -t commit-msg
+
 # Run all checks
 tox
 
