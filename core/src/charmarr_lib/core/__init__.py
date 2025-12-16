@@ -1,7 +1,7 @@
 # Copyright 2025 The Charmarr Project
 # See LICENSE file for licensing details.
 
-"""Core charm libraries for Charmarr."""
+"""Core libraries for Charmarr charms."""
 
 from charmarr_lib.core._arr import (
     ApplicationConfigBuilder,
