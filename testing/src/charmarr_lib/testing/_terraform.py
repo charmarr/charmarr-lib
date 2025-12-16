@@ -31,22 +31,25 @@ class TFManager:
         self, cmd: list[str], env: dict[str, str] | None = None
     ) -> subprocess.CompletedProcess[str]:
         """Run a terraform command."""
-        cmd = [self._binary, *cmd]
+        full_cmd = [self._binary, *cmd]
         result = subprocess.run(
-            cmd,
+            full_cmd,
             cwd=self._terraform_dir,
             capture_output=True,
             text=True,
             env=env,
         )
         if result.returncode != 0:
+            binary_name = Path(self._binary).name
+            subcommand = cmd[0] if cmd else "unknown"
             logger.error(
-                "Terraform %s failed:\nSTDOUT: %s\nSTDERR: %s",
-                cmd[1],
+                "%s %s failed:\nSTDOUT: %s\nSTDERR: %s",
+                binary_name,
+                subcommand,
                 result.stdout,
                 result.stderr,
             )
-            raise RuntimeError(f"Terraform {cmd[1]} failed with code {result.returncode}")
+            raise RuntimeError(f"{binary_name} {subcommand} failed with code {result.returncode}")
         return result
 
     def init(self) -> None:
