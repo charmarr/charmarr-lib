@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.1...charmarr-lib-testing-v0.2.2) (2025-12-16)
+
+
+### Bug Fixes
+
+* **testing:** fixes local version file update ([71e2dac](https://github.com/charmarr/charmarr-lib/commit/71e2dac22d084dcda68764ae3fe96aecaf6865e3))
+
 ## [0.2.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.0...charmarr-lib-testing-v0.2.1) (2025-12-16)
 
 

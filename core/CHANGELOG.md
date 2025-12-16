@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.4...charmarr-lib-core-v0.2.5) (2025-12-16)
+
+
+### Bug Fixes
+
+* **core:** fixes local version file update ([06cffbc](https://github.com/charmarr/charmarr-lib/commit/06cffbcc2593059591b1e51266954c8352097b45))
+
 ## [0.2.4](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.3...charmarr-lib-core-v0.2.4) (2025-12-16)
 
 
