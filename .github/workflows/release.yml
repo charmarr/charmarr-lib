@@ -28,51 +28,35 @@ jobs:
   publish-core:
     needs: release-please
     if: needs.release-please.outputs['core--release_created'] == 'true'
-    runs-on: ubuntu-latest
-    environment: pypi-core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: charmarr/.github/actions/lib/setup@v1
-      - uses: charmarr/.github/actions/lib/publish@v1
-        with:
-          package-name: charmarr-lib-core
-          package-dir: core
+    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
+    with:
+      package-name: charmarr-lib-core
+      package-dir: core
+      environment: pypi-core
 
   publish-krm:
     needs: release-please
     if: needs.release-please.outputs['krm--release_created'] == 'true'
-    runs-on: ubuntu-latest
-    environment: pypi-krm
-    steps:
-      - uses: actions/checkout@v4
-      - uses: charmarr/.github/actions/lib/setup@v1
-      - uses: charmarr/.github/actions/lib/publish@v1
-        with:
-          package-name: charmarr-lib-krm
-          package-dir: krm
+    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
+    with:
+      package-name: charmarr-lib-krm
+      package-dir: krm
+      environment: pypi-krm
 
   publish-vpn:
     needs: release-please
     if: needs.release-please.outputs['vpn--release_created'] == 'true'
-    runs-on: ubuntu-latest
-    environment: pypi-vpn
-    steps:
-      - uses: actions/checkout@v4
-      - uses: charmarr/.github/actions/lib/setup@v1
-      - uses: charmarr/.github/actions/lib/publish@v1
-        with:
-          package-name: charmarr-lib-vpn
-          package-dir: vpn
+    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
+    with:
+      package-name: charmarr-lib-vpn
+      package-dir: vpn
+      environment: pypi-vpn
 
   publish-testing:
     needs: release-please
     if: needs.release-please.outputs['testing--release_created'] == 'true'
-    runs-on: ubuntu-latest
-    environment: pypi-testing
-    steps:
-      - uses: actions/checkout@v4
-      - uses: charmarr/.github/actions/lib/setup@v1
-      - uses: charmarr/.github/actions/lib/publish@v1
-        with:
-          package-name: charmarr-lib-testing
-          package-dir: testing
+    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
+    with:
+      package-name: charmarr-lib-testing
+      package-dir: testing
+      environment: pypi-testing

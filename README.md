@@ -2,7 +2,17 @@
   <img src="assets/charmarr-charmarr-lib.png" width="350" alt="Charmarr Lib">
 </p>
 
-# Charmarr Library Monorepo
+<p align="center">
+  <a href="https://github.com/charmarr/charmarr-lib/actions/workflows/ci.yml"><img src="https://github.com/charmarr/charmarr-lib/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://pypi.org/project/charmarr-lib-core/"><img src="https://img.shields.io/pypi/v/charmarr-lib-core?label=core" alt="PyPI - core"></a>
+  <a href="https://pypi.org/project/charmarr-lib-krm/"><img src="https://img.shields.io/pypi/v/charmarr-lib-krm?label=krm" alt="PyPI - krm"></a>
+  <a href="https://pypi.org/project/charmarr-lib-vpn/"><img src="https://img.shields.io/pypi/v/charmarr-lib-vpn?label=vpn" alt="PyPI - vpn"></a>
+  <a href="https://pypi.org/project/charmarr-lib-testing/"><img src="https://img.shields.io/pypi/v/charmarr-lib-testing?label=testing" alt="PyPI - testing"></a>
+  <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json" alt="uv"></a>
+  <a href="https://github.com/charmarr/charmarr-lib/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-LGPL--3.0-blue" alt="License"></a>
+</p>
+
+<h1 align="center">Charmarr Library Monorepo</h1>
 
 Shared libraries for Charmarr charms implementing Juju relations and reconcilers, distributed as four pip-installable packages from a single monorepo.
 
