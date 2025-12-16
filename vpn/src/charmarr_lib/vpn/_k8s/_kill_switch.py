@@ -147,11 +147,6 @@ def _build_kill_switch_policy(config: KillSwitchConfig) -> NetworkPolicy:
     )
 
 
-def _is_kill_switch_present(manager: K8sResourceManager, app_name: str, namespace: str) -> bool:
-    """Check if kill switch NetworkPolicy exists for an application."""
-    return manager.exists(NetworkPolicyResource, _policy_name(app_name), namespace)
-
-
 def reconcile_kill_switch(
     manager: K8sResourceManager,
     app_name: str,
