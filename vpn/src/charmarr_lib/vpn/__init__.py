@@ -1,13 +1,7 @@
 # Copyright 2025 The Charmarr Project
 # See LICENSE file for licensing details.
 
-"""VPN gateway charm library for Kubernetes.
-
-This package provides:
-- VPN gateway Juju relation interface (from charmarr_lib.vpn.interfaces)
-- StatefulSet patching utilities for pod-gateway integration
-- NetworkPolicy kill switch implementation
-"""
+"""VPN gateway charm library for Kubernetes."""
 
 from charmarr_lib.vpn._k8s import (
     KillSwitchConfig,
