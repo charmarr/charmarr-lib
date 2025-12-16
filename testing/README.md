@@ -63,7 +63,3 @@ The function:
 1. Waits for all units to be active (with 3 consecutive successes)
 2. Checks for any errors
 3. Waits for all agents to be idle
-
-## License
-
-LGPL-3.0-or-later
