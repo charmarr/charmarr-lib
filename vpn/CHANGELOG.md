@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.2.0...charmarr-lib-vpn-v0.2.1) (2025-12-16)
+
+
+### Bug Fixes
+
+* **vpn:** fixes release please process ([72c0ea3](https://github.com/charmarr/charmarr-lib/commit/72c0ea3998188b96b74445e7076ac9e0ac5cebd2))
+
 ## [0.2.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.1.0...charmarr-lib-vpn-v0.2.0) (2025-12-15)
 
 
