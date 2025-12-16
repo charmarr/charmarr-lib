@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.1...charmarr-lib-core-v0.2.2) (2025-12-16)
+
+
+### Bug Fixes
+
+* **core:** fixes release to pypi ([a18e847](https://github.com/charmarr/charmarr-lib/commit/a18e8475719b5f7d250050aca6d19cd23e9a97da))
+
 ## [0.2.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.0...charmarr-lib-core-v0.2.1) (2025-12-16)
 
 
