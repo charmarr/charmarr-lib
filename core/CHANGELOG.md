@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.2...charmarr-lib-core-v0.2.3) (2025-12-16)
+
+
+### Bug Fixes
+
+* **core:** uses inline publish to workaround pypi restrictions ([64f540e](https://github.com/charmarr/charmarr-lib/commit/64f540ec4f4be74934202aa7aac55450817b2e7e))
+
 ## [0.2.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.1...charmarr-lib-core-v0.2.2) (2025-12-16)
 
 
