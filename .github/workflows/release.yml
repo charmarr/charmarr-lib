@@ -25,38 +25,75 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # NOTE: Publish steps are intentionally inlined here instead of using a reusable workflow.
+  # PyPI Trusted Publishing does not support reusable workflows - the job_workflow_ref claim
+  # must match the workflow configured in PyPI, which requires the pypi-publish action to run
+  # directly in this workflow file. See: https://github.com/pypa/gh-action-pypi-publish/issues/166
+
   publish-core:
     needs: release-please
     if: needs.release-please.outputs['core--release_created'] == 'true'
-    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
-    with:
-      package-name: charmarr-lib-core
-      package-dir: core
-      environment: pypi-core
+    runs-on: ubuntu-latest
+    environment: pypi-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Build package
+        run: uv build --package charmarr-lib-core
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: core/dist/
 
   publish-krm:
     needs: release-please
     if: needs.release-please.outputs['krm--release_created'] == 'true'
-    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
-    with:
-      package-name: charmarr-lib-krm
-      package-dir: krm
-      environment: pypi-krm
+    runs-on: ubuntu-latest
+    environment: pypi-krm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Build package
+        run: uv build --package charmarr-lib-krm
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: krm/dist/
 
   publish-vpn:
     needs: release-please
     if: needs.release-please.outputs['vpn--release_created'] == 'true'
-    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
-    with:
-      package-name: charmarr-lib-vpn
-      package-dir: vpn
-      environment: pypi-vpn
+    runs-on: ubuntu-latest
+    environment: pypi-vpn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Build package
+        run: uv build --package charmarr-lib-vpn
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: vpn/dist/
 
   publish-testing:
     needs: release-please
     if: needs.release-please.outputs['testing--release_created'] == 'true'
-    uses: charmarr/.github/.github/workflows/lib-publish.yml@v1
-    with:
-      package-name: charmarr-lib-testing
-      package-dir: testing
-      environment: pypi-testing
+    runs-on: ubuntu-latest
+    environment: pypi-testing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Build package
+        run: uv build --package charmarr-lib-testing
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: testing/dist/
