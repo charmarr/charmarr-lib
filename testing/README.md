@@ -1,4 +1,8 @@
-# charmarr-lib-testing
+<p align="center">
+  <img src="../assets/charmarr-charmarr-lib.png" width="350" alt="Charmarr Lib">
+</p>
+
+<h1 align="center">charmarr-lib-testing</h1>
 
 Testing utilities for Charmarr charms.
 
