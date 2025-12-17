@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.5...charmarr-lib-core-v0.3.0) (2025-12-17)
+
+
+### Features
+
+* **core:** adds a central reconciler ([4c2810e](https://github.com/charmarr/charmarr-lib/commit/4c2810e442eab4f5da19ea81eda0d14a931c57f6))
+
 ## [0.2.5](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.4...charmarr-lib-core-v0.2.5) (2025-12-16)
 
 
