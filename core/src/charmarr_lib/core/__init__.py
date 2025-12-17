@@ -30,6 +30,12 @@ from charmarr_lib.core._k8s import (
     is_storage_mounted,
     reconcile_storage_volume,
 )
+from charmarr_lib.core._reconciler import (
+    all_events,
+    observe_events,
+    reconcilable_events_k8s,
+    reconcilable_events_k8s_workloadless,
+)
 from charmarr_lib.core.constants import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
     MEDIA_TYPE_DOWNLOAD_PATHS,
@@ -67,7 +73,11 @@ __all__ = [
     "RequestManager",
     "RootFolderResponse",
     "SecretGetter",
+    "all_events",
     "is_storage_mounted",
+    "observe_events",
+    "reconcilable_events_k8s",
+    "reconcilable_events_k8s_workloadless",
     "reconcile_download_clients",
     "reconcile_external_url",
     "reconcile_media_manager_connections",
