@@ -120,26 +120,67 @@ def _build_storage_patch(
     }
 
 
+def _build_remove_storage_patch(
+    sts: StatefulSet,
+    container_name: str,
+    volume_name: str,
+) -> dict:
+    """Build a patch to remove a storage volume and its mount.
+
+    Kubernetes doesn't support removing array items by name in patches -
+    we must replace the entire array with the item filtered out.
+    """
+    if sts.spec is None or sts.spec.template.spec is None:
+        return {}
+
+    pod_spec = sts.spec.template.spec
+    filtered_volumes = [v.to_dict() for v in (pod_spec.volumes or []) if v.name != volume_name]
+
+    containers_patch = []
+    for container in pod_spec.containers or []:
+        if container.name == container_name:
+            filtered_mounts = [
+                m.to_dict() for m in (container.volumeMounts or []) if m.name != volume_name
+            ]
+            containers_patch.append({"name": container_name, "volumeMounts": filtered_mounts})
+        else:
+            containers_patch.append({"name": container.name})
+
+    return {
+        "spec": {
+            "template": {
+                "spec": {
+                    "volumes": filtered_volumes,
+                    "containers": containers_patch,
+                }
+            }
+        }
+    }
+
+
 def reconcile_storage_volume(
     manager: K8sResourceManager,
     statefulset_name: str,
     namespace: str,
     container_name: str,
-    pvc_name: str,
+    pvc_name: str | None,
     mount_path: str = _DEFAULT_MOUNT_PATH,
     volume_name: str = _DEFAULT_VOLUME_NAME,
 ) -> ReconcileResult:
     """Reconcile shared storage PVC volume and mount on a StatefulSet.
 
-    This function ensures a shared PVC is mounted in a Juju-managed StatefulSet.
-    It's idempotent - if the volume is already mounted, no changes are made.
+    This function ensures a shared PVC is mounted (or unmounted) in a
+    Juju-managed StatefulSet. It's idempotent.
+
+    If pvc_name is None, the volume is removed. If pvc_name is provided,
+    the volume is mounted.
 
     Args:
         manager: K8sResourceManager instance.
         statefulset_name: Name of the StatefulSet (usually self.app.name).
         namespace: Kubernetes namespace (usually self.model.name).
         container_name: Container name from charmcraft.yaml (NOT self.app.name!).
-        pvc_name: Name of the PVC to mount (from storage relation).
+        pvc_name: Name of the PVC to mount, or None to unmount.
         mount_path: Path where the volume should be mounted.
         volume_name: Name for the volume definition.
 
@@ -150,22 +191,28 @@ def reconcile_storage_volume(
         ApiError: If the StatefulSet doesn't exist or patch fails.
 
     Example:
+        # Mount storage when relation data is available
         result = reconcile_storage_volume(
             manager,
             statefulset_name=self.app.name,
             namespace=self.model.name,
-            container_name="radarr",  # From charmcraft.yaml
-            pvc_name="charmarr-media",
+            container_name="radarr",
+            pvc_name=storage_data.pvc_name if storage_data else None,
         )
-        if result.changed:
-            self.unit.status = MaintenanceStatus("Mounting shared storage")
     """
     sts = manager.get(StatefulSet, statefulset_name, namespace)
+    currently_mounted = is_storage_mounted(sts, container_name, volume_name)
 
-    if is_storage_mounted(sts, container_name, volume_name):
+    if pvc_name is None:
+        if not currently_mounted:
+            return ReconcileResult(changed=False, message="Storage not mounted")
+        patch = _build_remove_storage_patch(sts, container_name, volume_name)
+        manager.patch(StatefulSet, statefulset_name, patch, namespace)
+        return ReconcileResult(changed=True, message=f"Removed volume {volume_name}")
+
+    if currently_mounted:
         return ReconcileResult(changed=False, message="Storage already mounted")
 
     patch = _build_storage_patch(container_name, pvc_name, mount_path, volume_name)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
-
     return ReconcileResult(changed=True, message=f"Mounted {pvc_name} at {mount_path}")
