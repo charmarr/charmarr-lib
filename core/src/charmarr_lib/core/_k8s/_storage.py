@@ -151,7 +151,10 @@ def _build_remove_storage_json_patch(
             for mi, mount in enumerate(mounts):
                 if mount.name == volume_name:
                     operations.append(
-                        {"op": "remove", "path": f"/spec/template/spec/containers/{ci}/volumeMounts/{mi}"}
+                        {
+                            "op": "remove",
+                            "path": f"/spec/template/spec/containers/{ci}/volumeMounts/{mi}",
+                        }
                     )
                     break
             break

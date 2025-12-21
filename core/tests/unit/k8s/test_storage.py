@@ -138,3 +138,70 @@ def test_reconcile_uses_custom_volume_name(manager, mock_client, make_statefulse
 
     patch = mock_client.patch.call_args[0][2]
     assert patch["spec"]["template"]["spec"]["volumes"][0]["name"] == "custom-volume"
+
+
+# reconcile_storage_volume - removal (pvc_name=None)
+
+
+def test_reconcile_removes_when_mounted_and_pvc_none(manager, mock_client, make_statefulset):
+    """Removes volume when pvc_name is None and volume is mounted."""
+    from lightkube.types import PatchType
+
+    volume = Volume(
+        name="charmarr-shared-data",
+        persistentVolumeClaim=PersistentVolumeClaimVolumeSource(claimName="media-pvc"),
+    )
+    mount = VolumeMount(name="charmarr-shared-data", mountPath="/data")
+    mock_client.get.return_value = make_statefulset(volumes=[volume], container_mounts=[mount])
+
+    result = reconcile_storage_volume(
+        manager,
+        statefulset_name="radarr",
+        namespace="media",
+        container_name="radarr",
+        pvc_name=None,
+    )
+
+    assert result.changed is True
+    mock_client.patch.assert_called_once()
+    call_kwargs = mock_client.patch.call_args[1]
+    assert call_kwargs["patch_type"] == PatchType.JSON
+
+
+def test_reconcile_skips_removal_when_not_mounted(manager, mock_client, make_statefulset):
+    """Skips removal when storage not mounted."""
+    mock_client.get.return_value = make_statefulset()
+
+    result = reconcile_storage_volume(
+        manager,
+        statefulset_name="radarr",
+        namespace="media",
+        container_name="radarr",
+        pvc_name=None,
+    )
+
+    assert result.changed is False
+    mock_client.patch.assert_not_called()
+
+
+def test_reconcile_remove_patch_is_json_patch(manager, mock_client, make_statefulset):
+    """Removal uses JSON patch with correct operations."""
+    volume = Volume(
+        name="charmarr-shared-data",
+        persistentVolumeClaim=PersistentVolumeClaimVolumeSource(claimName="media-pvc"),
+    )
+    mount = VolumeMount(name="charmarr-shared-data", mountPath="/data")
+    mock_client.get.return_value = make_statefulset(volumes=[volume], container_mounts=[mount])
+
+    reconcile_storage_volume(
+        manager,
+        statefulset_name="radarr",
+        namespace="media",
+        container_name="radarr",
+        pvc_name=None,
+    )
+
+    patch_ops = mock_client.patch.call_args[0][2]
+    assert isinstance(patch_ops, list)
+    assert len(patch_ops) == 2
+    assert all(op["op"] == "remove" for op in patch_ops)
