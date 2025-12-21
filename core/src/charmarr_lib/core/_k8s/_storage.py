@@ -34,7 +34,7 @@ Critical gotcha:
 See ADR: storage/adr-003-pvc-patching-in-arr-charms.md
 """
 
-from lightkube.models.apps_v1 import StatefulSet
+from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.models.core_v1 import (
     Container,
     PersistentVolumeClaimVolumeSource,
