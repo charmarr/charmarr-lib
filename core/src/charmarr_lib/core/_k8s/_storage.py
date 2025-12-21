@@ -41,6 +41,7 @@ from lightkube.models.core_v1 import (
     VolumeMount,
 )
 from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.types import PatchType
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 
@@ -120,42 +121,42 @@ def _build_storage_patch(
     }
 
 
-def _build_remove_storage_patch(
+def _build_remove_storage_json_patch(
     sts: StatefulSet,
     container_name: str,
     volume_name: str,
-) -> dict:
-    """Build a patch to remove a storage volume and its mount.
+) -> list[dict]:
+    """Build JSON patch operations to remove a storage volume and its mount.
 
-    Kubernetes doesn't support removing array items by name in patches -
-    we must replace the entire array with the item filtered out.
+    Returns a list of JSON patch operations that remove:
+    1. The volume from spec.template.spec.volumes
+    2. The volumeMount from the target container
     """
     if sts.spec is None or sts.spec.template.spec is None:
-        return {}
+        return []
 
     pod_spec = sts.spec.template.spec
-    filtered_volumes = [v.to_dict() for v in (pod_spec.volumes or []) if v.name != volume_name]
+    operations: list[dict] = []
 
-    containers_patch = []
-    for container in pod_spec.containers or []:
+    volumes = pod_spec.volumes or []
+    for i, vol in enumerate(volumes):
+        if vol.name == volume_name:
+            operations.append({"op": "remove", "path": f"/spec/template/spec/volumes/{i}"})
+            break
+
+    containers = pod_spec.containers or []
+    for ci, container in enumerate(containers):
         if container.name == container_name:
-            filtered_mounts = [
-                m.to_dict() for m in (container.volumeMounts or []) if m.name != volume_name
-            ]
-            containers_patch.append({"name": container_name, "volumeMounts": filtered_mounts})
-        else:
-            containers_patch.append({"name": container.name})
+            mounts = container.volumeMounts or []
+            for mi, mount in enumerate(mounts):
+                if mount.name == volume_name:
+                    operations.append(
+                        {"op": "remove", "path": f"/spec/template/spec/containers/{ci}/volumeMounts/{mi}"}
+                    )
+                    break
+            break
 
-    return {
-        "spec": {
-            "template": {
-                "spec": {
-                    "volumes": filtered_volumes,
-                    "containers": containers_patch,
-                }
-            }
-        }
-    }
+    return operations
 
 
 def reconcile_storage_volume(
@@ -206,8 +207,9 @@ def reconcile_storage_volume(
     if pvc_name is None:
         if not currently_mounted:
             return ReconcileResult(changed=False, message="Storage not mounted")
-        patch = _build_remove_storage_patch(sts, container_name, volume_name)
-        manager.patch(StatefulSet, statefulset_name, patch, namespace)
+        patch_ops = _build_remove_storage_json_patch(sts, container_name, volume_name)
+        if patch_ops:
+            manager.patch(StatefulSet, statefulset_name, patch_ops, namespace, PatchType.JSON)
         return ReconcileResult(changed=True, message=f"Removed volume {volume_name}")
 
     if currently_mounted:

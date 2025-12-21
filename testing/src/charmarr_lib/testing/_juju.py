@@ -74,6 +74,7 @@ def deploy_multimeter(
     juju: jubilant.Juju,
     app: str = "charmarr-multimeter",
     channel: str = MULTIMETER_CHANNEL,
+    trust: bool = True,
 ) -> None:
     """Deploy charmarr-multimeter test utility charm from Charmhub.
 
@@ -81,9 +82,11 @@ def deploy_multimeter(
         juju: Juju instance.
         app: Application name for the deployment.
         channel: Charmhub channel to deploy from.
+        trust: Whether to grant cluster trust for K8s operations.
     """
     juju.deploy(
         MULTIMETER_CHARM,
         app=app,
         channel=channel,
+        trust=trust,
     )
