@@ -72,18 +72,18 @@ MULTIMETER_CHANNEL = "latest/edge"
 
 def deploy_multimeter(
     juju: jubilant.Juju,
-    app_name: str = "charmarr-multimeter",
+    app: str = "charmarr-multimeter",
     channel: str = MULTIMETER_CHANNEL,
 ) -> None:
     """Deploy charmarr-multimeter test utility charm from Charmhub.
 
     Args:
         juju: Juju instance.
-        app_name: Application name for the deployment.
+        app: Application name for the deployment.
         channel: Charmhub channel to deploy from.
     """
     juju.deploy(
         MULTIMETER_CHARM,
-        app_name=app_name,
+        app=app,
         channel=channel,
     )
