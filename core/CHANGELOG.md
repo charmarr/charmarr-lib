@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.3.0...charmarr-lib-core-v0.3.1) (2025-12-22)
+
+
+### Bug Fixes
+
+* **core:** fixes lightkube imports ([1c71cb5](https://github.com/charmarr/charmarr-lib/commit/1c71cb51d2fc750a842941d5bcae0116ca3febe0))
+* **core:** formatting ([a8b2d25](https://github.com/charmarr/charmarr-lib/commit/a8b2d253069cebc9791a7ba6a45211374f6156e5))
+* **core:** storage reconciler handles pvc removal ([6968a41](https://github.com/charmarr/charmarr-lib/commit/6968a41634d59f12d59da5371c31df598f349ed7))
+* **testing:** adds trust to juju deploy ([e4ef13b](https://github.com/charmarr/charmarr-lib/commit/e4ef13b5bc5eba172cc6497b9a588081811149ed))
+
 ## [0.3.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.2.5...charmarr-lib-core-v0.3.0) (2025-12-17)
 
 

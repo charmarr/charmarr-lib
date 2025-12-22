@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.2...charmarr-lib-testing-v0.2.3) (2025-12-22)
+
+
+### Bug Fixes
+
+* **core:** fixes lightkube imports ([1c71cb5](https://github.com/charmarr/charmarr-lib/commit/1c71cb51d2fc750a842941d5bcae0116ca3febe0))
+* **testing:** adds trust to juju deploy ([e4ef13b](https://github.com/charmarr/charmarr-lib/commit/e4ef13b5bc5eba172cc6497b9a588081811149ed))
+* **testing:** fixes jubilant usage ([6ecd668](https://github.com/charmarr/charmarr-lib/commit/6ecd6681ee6e1eab371b892e9264f18344bbe490))
+
 ## [0.2.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.1...charmarr-lib-testing-v0.2.2) (2025-12-16)
 
 
