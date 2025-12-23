@@ -52,20 +52,39 @@ def _build_gateway_env_vars(data: VPNGatewayProviderData, pod_cidr: str) -> list
     ]
 
 
-def _build_gateway_init_container(data: VPNGatewayProviderData, pod_cidr: str) -> Container:
+def _build_gateway_init_container(
+    data: VPNGatewayProviderData,
+    pod_cidr: str,
+    input_cidrs: list[str],
+) -> Container:
     """Build gateway-init container spec.
 
     The init container:
     - Creates VXLAN tunnel interface
     - Sets up iptables forwarding rules
-    - Adds iptables rule to accept VXLAN packets from pod CIDR (critical fix)
+    - Adds iptables rules to accept INPUT from specified CIDRs
     - Requires privileged mode for sysctl ip_forward
+
+    Args:
+        data: VPN gateway provider data from relation.
+        pod_cidr: Pod network CIDR for env vars (e.g., "10.1.0.0/16").
+        input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
+            Pass empty list if VPN solution handles INPUT rules natively
+            (e.g., gluetun's /iptables/post-rules.txt).
     """
+    if input_cidrs:
+        iptables_cmds = " && ".join(
+            f"iptables -I INPUT -i eth0 -s {cidr} -j ACCEPT" for cidr in input_cidrs
+        )
+        command_args = f"/bin/gateway_init.sh && {iptables_cmds}"
+    else:
+        command_args = "/bin/gateway_init.sh"
+
     return Container(
         name=GATEWAY_INIT_CONTAINER_NAME,
         image=POD_GATEWAY_IMAGE,
         command=["/bin/sh", "-c"],
-        args=[f"/bin/gateway_init.sh && iptables -I INPUT -i eth0 -s {pod_cidr} -j ACCEPT"],
+        args=[command_args],
         securityContext=SecurityContext(privileged=True),
         env=_build_gateway_env_vars(data, pod_cidr),
     )
@@ -92,24 +111,30 @@ def _build_gateway_sidecar_container(data: VPNGatewayProviderData, pod_cidr: str
     )
 
 
-def build_gateway_patch(data: VPNGatewayProviderData, pod_cidr: str) -> dict[str, Any]:
+def build_gateway_patch(
+    data: VPNGatewayProviderData,
+    pod_cidr: str,
+    input_cidrs: list[str],
+) -> dict[str, Any]:
     """Build strategic merge patch for gateway StatefulSet.
 
     Adds pod-gateway init container and sidecar to the VPN gateway StatefulSet.
 
     Args:
         data: VPN gateway provider data containing VXLAN config.
-        pod_cidr: Pod network CIDR for iptables rule (e.g., "10.1.0.0/16").
-                  This is extracted from cluster_cidrs (first CIDR is typically pods).
+        pod_cidr: Pod network CIDR for env vars (e.g., "10.1.0.0/16").
+        input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
+            Pass empty list if VPN solution handles INPUT rules natively.
 
     Returns:
         Strategic merge patch dict for StatefulSet.
 
     Example:
-        patch = build_gateway_patch(provider_data, "10.1.0.0/16")
+        cidrs = ["10.1.0.0/16", "10.152.183.0/24", "192.168.0.0/24"]
+        patch = build_gateway_patch(provider_data, "10.1.0.0/16", cidrs)
         manager.patch(StatefulSet, "gluetun", patch, "vpn-gateway")
     """
-    init_container = _build_gateway_init_container(data, pod_cidr)
+    init_container = _build_gateway_init_container(data, pod_cidr, input_cidrs)
     sidecar = _build_gateway_sidecar_container(data, pod_cidr)
 
     return {
@@ -155,6 +180,7 @@ def reconcile_gateway(
     namespace: str,
     data: VPNGatewayProviderData,
     pod_cidr: str,
+    input_cidrs: list[str],
 ) -> ReconcileResult:
     """Reconcile pod-gateway containers on a VPN gateway StatefulSet.
 
@@ -168,7 +194,9 @@ def reconcile_gateway(
         statefulset_name: Name of the StatefulSet (usually self.app.name).
         namespace: Kubernetes namespace (usually self.model.name).
         data: VPN gateway provider data containing VXLAN config.
-        pod_cidr: Pod network CIDR for iptables rule (e.g., "10.1.0.0/16").
+        pod_cidr: Pod network CIDR for env vars (e.g., "10.1.0.0/16").
+        input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
+            Pass empty list if VPN solution handles INPUT rules natively.
 
     Returns:
         ReconcileResult indicating if changes were made.
@@ -181,7 +209,7 @@ def reconcile_gateway(
     if is_gateway_patched(sts):
         return ReconcileResult(changed=False, message="Gateway containers already present")
 
-    patch = build_gateway_patch(data, pod_cidr)
+    patch = build_gateway_patch(data, pod_cidr, input_cidrs)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
     return ReconcileResult(

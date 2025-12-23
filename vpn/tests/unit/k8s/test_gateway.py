@@ -58,7 +58,7 @@ def test_is_gateway_patched_false_when_empty(make_statefulset):
 
 def test_build_gateway_patch_creates_init_container(provider_data):
     """Patch includes gateway-init container with correct config."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16")
+    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
 
     init_containers = patch["spec"]["template"]["spec"]["initContainers"]
     assert len(init_containers) == 1
@@ -69,7 +69,7 @@ def test_build_gateway_patch_creates_init_container(provider_data):
 
 def test_build_gateway_patch_creates_sidecar_container(provider_data):
     """Patch includes gateway-sidecar container with correct config."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16")
+    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
 
     containers = patch["spec"]["template"]["spec"]["containers"]
     assert len(containers) == 1
@@ -80,7 +80,7 @@ def test_build_gateway_patch_creates_sidecar_container(provider_data):
 
 def test_build_gateway_patch_includes_env_vars(provider_data):
     """Patch includes required environment variables."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16")
+    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
 
     init_env = {
         e["name"]: e["value"]
@@ -95,17 +95,29 @@ def test_build_gateway_patch_includes_env_vars(provider_data):
 
 
 def test_build_gateway_patch_includes_iptables_fix(provider_data):
-    """Init container args include iptables rule for pod CIDR."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16")
+    """Init container args include iptables rules for input CIDRs."""
+    input_cidrs = ["10.1.0.0/16", "192.168.0.0/24"]
+    patch = build_gateway_patch(provider_data, "10.1.0.0/16", input_cidrs)
 
     init_args = patch["spec"]["template"]["spec"]["initContainers"][0]["args"]
     assert len(init_args) == 1
     assert "iptables -I INPUT -i eth0 -s 10.1.0.0/16 -j ACCEPT" in init_args[0]
+    assert "iptables -I INPUT -i eth0 -s 192.168.0.0/24 -j ACCEPT" in init_args[0]
+
+
+def test_build_gateway_patch_no_iptables_when_empty_cidrs(provider_data):
+    """Init container skips iptables rules when input_cidrs is empty."""
+    patch = build_gateway_patch(provider_data, "10.1.0.0/16", [])
+
+    init_args = patch["spec"]["template"]["spec"]["initContainers"][0]["args"]
+    assert len(init_args) == 1
+    assert "iptables" not in init_args[0]
+    assert init_args[0] == "/bin/gateway_init.sh"
 
 
 def test_build_gateway_patch_sidecar_has_ports(provider_data):
     """Sidecar container exposes DHCP and DNS ports."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16")
+    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
 
     ports = patch["spec"]["template"]["spec"]["containers"][0]["ports"]
     port_names = {p["name"]: p for p in ports}
@@ -133,6 +145,7 @@ def test_reconcile_gateway_patches_when_not_patched(
         namespace="vpn-gateway",
         data=provider_data,
         pod_cidr="10.1.0.0/16",
+        input_cidrs=["10.1.0.0/16"],
     )
 
     assert result.changed is True
@@ -153,6 +166,7 @@ def test_reconcile_gateway_skips_when_already_patched(
         namespace="vpn-gateway",
         data=provider_data,
         pod_cidr="10.1.0.0/16",
+        input_cidrs=["10.1.0.0/16"],
     )
 
     assert result.changed is False
@@ -169,6 +183,7 @@ def test_reconcile_gateway_returns_message(manager, mock_client, provider_data, 
         namespace="vpn-gateway",
         data=provider_data,
         pod_cidr="10.1.0.0/16",
+        input_cidrs=["10.1.0.0/16"],
     )
 
     assert "gluetun" in result.message
