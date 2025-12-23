@@ -18,10 +18,8 @@ which uses COMMA-separated. This is a pod-gateway quirk.
 
 from typing import Any
 
-from lightkube.models.apps_v1 import StatefulSet
 from lightkube.models.core_v1 import (
     Capabilities,
-    ConfigMap,
     ConfigMapVolumeSource,
     Container,
     EnvVar,
@@ -30,7 +28,8 @@ from lightkube.models.core_v1 import (
     VolumeMount,
 )
 from lightkube.models.meta_v1 import ObjectMeta
-from lightkube.resources.core_v1 import ConfigMap as ConfigMapResource
+from lightkube.resources.apps_v1 import StatefulSet
+from lightkube.resources.core_v1 import ConfigMap
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 from charmarr_lib.vpn.constants import (
@@ -123,7 +122,7 @@ def reconcile_gateway_client_configmap(
         data=data,
     )
 
-    existed = manager.exists(ConfigMapResource, configmap_name, namespace)
+    existed = manager.exists(ConfigMap, configmap_name, namespace)
     manager.apply(configmap)
 
     if existed:

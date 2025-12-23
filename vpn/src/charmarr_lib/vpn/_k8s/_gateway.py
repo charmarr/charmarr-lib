@@ -11,7 +11,6 @@ Based on validated configuration from vxlan-validation-plan.md.
 
 from typing import Any
 
-from lightkube.models.apps_v1 import StatefulSet
 from lightkube.models.core_v1 import (
     Capabilities,
     Container,
@@ -19,6 +18,7 @@ from lightkube.models.core_v1 import (
     EnvVar,
     SecurityContext,
 )
+from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import Service
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
