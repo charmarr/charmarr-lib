@@ -3,13 +3,17 @@
 
 """Unit tests for gateway StatefulSet patching."""
 
-from lightkube.models.core_v1 import Container
+from unittest.mock import MagicMock
+
+import pytest
+from lightkube.models.core_v1 import Container, ServiceSpec
 
 from charmarr_lib.vpn import (
     GATEWAY_INIT_CONTAINER_NAME,
     GATEWAY_SIDECAR_CONTAINER_NAME,
     POD_GATEWAY_IMAGE,
     build_gateway_patch,
+    get_cluster_dns_ip,
     is_gateway_patched,
     reconcile_gateway,
 )
@@ -168,3 +172,28 @@ def test_reconcile_gateway_returns_message(manager, mock_client, provider_data, 
     )
 
     assert "gluetun" in result.message
+
+
+# get_cluster_dns_ip
+
+
+def test_get_cluster_dns_ip_returns_cluster_ip(manager, mock_client):
+    """Returns the kube-dns service ClusterIP."""
+    mock_svc = MagicMock()
+    mock_svc.spec = ServiceSpec(clusterIP="10.152.183.10")
+    mock_client.get.return_value = mock_svc
+
+    result = get_cluster_dns_ip(manager)
+
+    assert result == "10.152.183.10"
+    mock_client.get.assert_called_once()
+
+
+def test_get_cluster_dns_ip_raises_on_no_cluster_ip(manager, mock_client):
+    """Raises ValueError when kube-dns has no ClusterIP."""
+    mock_svc = MagicMock()
+    mock_svc.spec = ServiceSpec(clusterIP=None)
+    mock_client.get.return_value = mock_svc
+
+    with pytest.raises(ValueError, match="no ClusterIP"):
+        get_cluster_dns_ip(manager)

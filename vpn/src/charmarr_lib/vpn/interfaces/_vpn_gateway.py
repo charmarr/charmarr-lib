@@ -34,6 +34,9 @@ class VPNGatewayProviderData(BaseModel):
     cluster_cidrs: str = Field(
         description="Comma-separated CIDRs to NOT route through VPN",
     )
+    cluster_dns_ip: str = Field(
+        description="Cluster DNS server IP (kube-dns service ClusterIP)",
+    )
     vpn_connected: bool = Field(
         default=False,
         description="Whether VPN tunnel is established",

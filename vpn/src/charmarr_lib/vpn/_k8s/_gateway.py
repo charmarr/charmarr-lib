@@ -19,6 +19,7 @@ from lightkube.models.core_v1 import (
     EnvVar,
     SecurityContext,
 )
+from lightkube.resources.core_v1 import Service
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 from charmarr_lib.vpn.constants import (
@@ -187,3 +188,27 @@ def reconcile_gateway(
         changed=True,
         message=f"Added pod-gateway containers to {statefulset_name}",
     )
+
+
+def get_cluster_dns_ip(manager: K8sResourceManager) -> str:
+    """Get the cluster DNS server IP from kube-dns service.
+
+    Discovers the ClusterIP of the kube-dns service in kube-system namespace.
+    This is needed for pod-gateway client settings to resolve the gateway hostname.
+
+    Args:
+        manager: K8sResourceManager instance.
+
+    Returns:
+        The kube-dns service ClusterIP (e.g., "10.152.183.10").
+
+    Raises:
+        ApiError: If kube-dns service doesn't exist or can't be accessed.
+        ValueError: If kube-dns service has no ClusterIP.
+    """
+    svc = manager.get(Service, "kube-dns", "kube-system")
+
+    if svc.spec is None or not svc.spec.clusterIP:
+        raise ValueError("kube-dns service has no ClusterIP")
+
+    return svc.spec.clusterIP

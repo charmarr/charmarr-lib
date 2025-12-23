@@ -3,6 +3,9 @@
 
 """Unit tests for gateway client StatefulSet patching."""
 
+from unittest.mock import MagicMock
+
+from lightkube import ApiError
 from lightkube.models.core_v1 import Container
 
 from charmarr_lib.vpn import (
@@ -13,6 +16,7 @@ from charmarr_lib.vpn import (
     build_gateway_client_patch,
     is_gateway_client_patched,
     reconcile_gateway_client,
+    reconcile_gateway_client_configmap,
 )
 
 # is_gateway_client_patched
@@ -189,3 +193,42 @@ def test_reconcile_gateway_client_returns_message(
     )
 
     assert "qbittorrent" in result.message
+
+
+# reconcile_gateway_client_configmap
+
+
+def test_reconcile_gateway_client_configmap_creates_when_not_exists(manager, mock_client):
+    """Creates ConfigMap when it doesn't exist."""
+    not_found = ApiError(response=MagicMock(status_code=404, json=lambda: {}))
+    not_found.status = MagicMock(code=404)
+    mock_client.get.side_effect = not_found
+
+    result = reconcile_gateway_client_configmap(
+        manager,
+        configmap_name="vpn-settings",
+        namespace="downloads",
+        dns_server_ip="10.152.183.10",
+        cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
+    )
+
+    assert result.changed is True
+    assert "Created" in result.message
+    mock_client.apply.assert_called_once()
+
+
+def test_reconcile_gateway_client_configmap_updates_when_exists(manager, mock_client):
+    """Updates ConfigMap when it already exists."""
+    mock_client.get.return_value = True  # exists returns True
+
+    result = reconcile_gateway_client_configmap(
+        manager,
+        configmap_name="vpn-settings",
+        namespace="downloads",
+        dns_server_ip="10.152.183.10",
+        cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
+    )
+
+    assert result.changed is True
+    assert "Updated" in result.message
+    mock_client.apply.assert_called_once()

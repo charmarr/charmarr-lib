@@ -53,6 +53,7 @@ def test_provider_publish_and_get_connected_clients():
         provider_data = VPNGatewayProviderData(
             gateway_dns_name="gluetun.media.svc.cluster.local",
             cluster_cidrs="10.42.0.0/16,10.43.0.0/16",
+            cluster_dns_ip="10.43.0.10",
             instance_name="gluetun",
             vpn_connected=True,
         )
@@ -72,6 +73,7 @@ def test_requirer_get_gateway():
     provider_data = VPNGatewayProviderData(
         gateway_dns_name="gluetun.media.svc.cluster.local",
         cluster_cidrs="10.42.0.0/16,10.43.0.0/16",
+        cluster_dns_ip="10.43.0.10",
         instance_name="gluetun",
         vpn_connected=True,
         external_ip="185.112.34.56",
@@ -98,6 +100,7 @@ def test_requirer_is_ready_when_vpn_connected():
     provider_data = VPNGatewayProviderData(
         gateway_dns_name="gluetun.media.svc.cluster.local",
         cluster_cidrs="10.42.0.0/16,10.43.0.0/16",
+        cluster_dns_ip="10.43.0.10",
         instance_name="gluetun",
         vpn_connected=True,
     )
@@ -117,6 +120,7 @@ def test_requirer_is_ready_false_when_vpn_not_connected():
     provider_data = VPNGatewayProviderData(
         gateway_dns_name="gluetun.media.svc.cluster.local",
         cluster_cidrs="10.42.0.0/16,10.43.0.0/16",
+        cluster_dns_ip="10.43.0.10",
         instance_name="gluetun",
         vpn_connected=False,
     )
@@ -161,6 +165,7 @@ def test_provider_publish_data_non_leader():
         provider_data = VPNGatewayProviderData(
             gateway_dns_name="gluetun.media.svc.cluster.local",
             cluster_cidrs="10.42.0.0/16,10.43.0.0/16",
+            cluster_dns_ip="10.43.0.10",
             instance_name="gluetun",
         )
         mgr.charm.provider.publish_data(provider_data)

@@ -21,6 +21,7 @@ from typing import Any
 from lightkube.models.apps_v1 import StatefulSet
 from lightkube.models.core_v1 import (
     Capabilities,
+    ConfigMap,
     ConfigMapVolumeSource,
     Container,
     EnvVar,
@@ -28,6 +29,8 @@ from lightkube.models.core_v1 import (
     Volume,
     VolumeMount,
 )
+from lightkube.models.meta_v1 import ObjectMeta
+from lightkube.resources.core_v1 import ConfigMap as ConfigMapResource
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 from charmarr_lib.vpn.constants import (
@@ -89,6 +92,49 @@ def build_gateway_client_configmap_data(
     """
     settings = f'K8S_DNS_IPS="{dns_server_ip}"\nNOT_ROUTED_TO_GATEWAY_CIDRS="{cluster_cidrs}"'
     return {"settings.sh": settings}
+
+
+def reconcile_gateway_client_configmap(
+    manager: K8sResourceManager,
+    configmap_name: str,
+    namespace: str,
+    dns_server_ip: str,
+    cluster_cidrs: str,
+) -> ReconcileResult:
+    """Reconcile ConfigMap for gateway client pod-gateway settings.
+
+    Creates or updates the ConfigMap containing settings for pod-gateway
+    client containers (K8S_DNS_IPS, NOT_ROUTED_TO_GATEWAY_CIDRS).
+
+    Args:
+        manager: K8sResourceManager instance.
+        configmap_name: Name for the ConfigMap.
+        namespace: Kubernetes namespace.
+        dns_server_ip: Kubernetes DNS server IP (e.g., "10.152.183.10").
+        cluster_cidrs: Space-separated cluster CIDRs for bypass.
+
+    Returns:
+        ReconcileResult indicating if changes were made.
+    """
+    data = build_gateway_client_configmap_data(dns_server_ip, cluster_cidrs)
+
+    configmap = ConfigMap(
+        metadata=ObjectMeta(name=configmap_name, namespace=namespace),
+        data=data,
+    )
+
+    existed = manager.exists(ConfigMapResource, configmap_name, namespace)
+    manager.apply(configmap)
+
+    if existed:
+        return ReconcileResult(
+            changed=True,
+            message=f"Updated gateway client ConfigMap {configmap_name}",
+        )
+    return ReconcileResult(
+        changed=True,
+        message=f"Created gateway client ConfigMap {configmap_name}",
+    )
 
 
 def build_gateway_client_patch(

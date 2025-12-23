@@ -32,6 +32,7 @@ def provider_data():
     return VPNGatewayProviderData(
         gateway_dns_name="gluetun.vpn-gateway.svc.cluster.local",
         cluster_cidrs="10.1.0.0/16,10.152.183.0/24",
+        cluster_dns_ip="10.152.183.10",
         vpn_connected=True,
         instance_name="gluetun",
     )
