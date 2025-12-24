@@ -33,6 +33,7 @@ from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import ConfigMap
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
+from charmarr_lib.vpn._k8s._kill_switch import KillSwitchConfig, reconcile_kill_switch
 from charmarr_lib.vpn.constants import (
     CLIENT_INIT_CONTAINER_NAME,
     CLIENT_SIDECAR_CONTAINER_NAME,
@@ -83,24 +84,13 @@ def _build_config_volume(configmap_name: str) -> Volume:
     )
 
 
-def build_gateway_client_configmap_data(
+def _build_configmap_data(
     dns_server_ip: str,
     cluster_cidrs: str,
     vxlan_id: int,
     vxlan_ip_network: str,
 ) -> dict[str, str]:
-    """Build ConfigMap data for gateway client pod-gateway settings.
-
-    Args:
-        dns_server_ip: Kubernetes DNS server IP (e.g., "10.152.183.10").
-        cluster_cidrs: Cluster CIDRs for bypass (comma or space-separated).
-                       Will be normalized to space-separated for pod-gateway.
-        vxlan_id: VXLAN tunnel ID (must match gateway).
-        vxlan_ip_network: First 3 octets of VXLAN subnet (must match gateway).
-
-    Returns:
-        Dict with settings.sh content for ConfigMap data field.
-    """
+    """Build ConfigMap data for gateway client pod-gateway settings."""
     cidrs_normalized = " ".join(c.strip() for c in cluster_cidrs.replace(",", " ").split())
     settings = "\n".join(
         [
@@ -113,39 +103,23 @@ def build_gateway_client_configmap_data(
     return {"settings.sh": settings}
 
 
-def reconcile_gateway_client_configmap(
+def _reconcile_configmap(
     manager: K8sResourceManager,
     configmap_name: str,
     namespace: str,
     data: VPNGatewayProviderData | None,
-) -> ReconcileResult:
+) -> None:
     """Reconcile ConfigMap for gateway client pod-gateway settings.
 
     When data is provided, creates or updates the ConfigMap. When data is None,
     deletes the ConfigMap if it exists.
-
-    Args:
-        manager: K8sResourceManager instance.
-        configmap_name: Name for the ConfigMap.
-        namespace: Kubernetes namespace.
-        data: VPN gateway provider data, or None to delete the ConfigMap.
-
-    Returns:
-        ReconcileResult indicating if changes were made.
     """
     if data is None:
-        if not manager.exists(ConfigMap, configmap_name, namespace):
-            return ReconcileResult(
-                changed=False,
-                message=f"Gateway client ConfigMap {configmap_name} not present",
-            )
-        manager.delete(ConfigMap, configmap_name, namespace)
-        return ReconcileResult(
-            changed=True,
-            message=f"Deleted gateway client ConfigMap {configmap_name}",
-        )
+        if manager.exists(ConfigMap, configmap_name, namespace):
+            manager.delete(ConfigMap, configmap_name, namespace)
+        return
 
-    cm_data = build_gateway_client_configmap_data(
+    cm_data = _build_configmap_data(
         data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
     )
 
@@ -156,21 +130,13 @@ def reconcile_gateway_client_configmap(
 
     manager.apply(configmap)
 
-    return ReconcileResult(
-        changed=True,
-        message=f"Reconciled gateway client ConfigMap {configmap_name}",
-    )
 
-
-def build_gateway_client_patch(
+def _build_patch(
     data: VPNGatewayProviderData,
     configmap_name: str,
     config_hash: str,
 ) -> dict[str, Any]:
-    """Build strategic merge patch for gateway client StatefulSet.
-
-    Includes a config hash annotation to trigger pod restart when settings change.
-    """
+    """Build strategic merge patch for gateway client StatefulSet."""
     init_container = _build_gateway_client_init_container(data.gateway_dns_name)
     sidecar = _build_gateway_client_sidecar_container(data.gateway_dns_name)
     config_volume = _build_config_volume(configmap_name)
@@ -218,19 +184,26 @@ def reconcile_gateway_client(
     statefulset_name: str,
     namespace: str,
     data: VPNGatewayProviderData | None,
-    configmap_name: str,
+    *,
+    killswitch: bool = False,
 ) -> ReconcileResult:
-    """Reconcile pod-gateway client containers on a StatefulSet.
+    """Reconcile pod-gateway client on a StatefulSet.
 
-    When data is provided, ensures the download client StatefulSet has the required
-    pod-gateway containers. When data is None, removes containers, volume, and annotation.
+    Handles all resources needed for VPN gateway client routing:
+    - ConfigMap with pod-gateway settings
+    - StatefulSet patch with init container and sidecar
+    - NetworkPolicy kill switch (optional)
+
+    When data is provided, creates/updates all resources. When data is None,
+    cleans up all resources.
 
     Args:
         manager: K8sResourceManager instance.
         statefulset_name: Name of the StatefulSet (usually self.app.name).
         namespace: Kubernetes namespace (usually self.model.name).
         data: VPN gateway provider data from relation, or None to clean up.
-        configmap_name: Name of the ConfigMap containing pod-gateway settings.
+        killswitch: If True, creates a NetworkPolicy that blocks egress except
+            to cluster CIDRs. Prevents traffic leaks if VXLAN routing fails.
 
     Returns:
         ReconcileResult indicating if changes were made.
@@ -238,21 +211,32 @@ def reconcile_gateway_client(
     Raises:
         ApiError: If the StatefulSet doesn't exist or patch fails.
     """
-    cm_data = (
-        build_gateway_client_configmap_data(
+    configmap_name = f"{statefulset_name}-gateway-client-config"
+
+    _reconcile_configmap(manager, configmap_name, namespace, data)
+
+    if data:
+        cm_data = _build_configmap_data(
             data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
         )
-        if data
-        else {}
-    )
-    config_hash = _compute_config_hash(cm_data) if cm_data else None
+        config_hash = _compute_config_hash(cm_data)
+        patch = _build_patch(data, configmap_name, config_hash)
+    else:
+        patch = _build_gateway_client_cleanup_patch()
 
-    patch = (
-        build_gateway_client_patch(data, configmap_name, config_hash)  # pyright: ignore[reportArgumentType]
-        if data
-        else _build_gateway_client_cleanup_patch()
-    )
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
+
+    if killswitch:
+        if data:
+            cidrs = [c.strip() for c in data.cluster_cidrs.replace(",", " ").split()]
+            kill_config = KillSwitchConfig(
+                app_name=statefulset_name,
+                namespace=namespace,
+                cluster_cidrs=cidrs,
+            )
+            reconcile_kill_switch(manager, statefulset_name, namespace, kill_config)
+        else:
+            reconcile_kill_switch(manager, statefulset_name, namespace, config=None)
 
     return ReconcileResult(
         changed=True,

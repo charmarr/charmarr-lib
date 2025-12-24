@@ -4,15 +4,9 @@
 """VPN gateway charm library for Kubernetes."""
 
 from charmarr_lib.vpn._k8s import (
-    KillSwitchConfig,
-    build_gateway_client_configmap_data,
-    build_gateway_client_patch,
-    build_gateway_patch,
     get_cluster_dns_ip,
     reconcile_gateway,
     reconcile_gateway_client,
-    reconcile_gateway_client_configmap,
-    reconcile_kill_switch,
 )
 from charmarr_lib.vpn.constants import (
     CLIENT_INIT_CONTAINER_NAME,
@@ -42,13 +36,7 @@ __all__ = [
     "GATEWAY_INIT_CONTAINER_NAME",
     "GATEWAY_SIDECAR_CONTAINER_NAME",
     "POD_GATEWAY_IMAGE",
-    "KillSwitchConfig",
-    "build_gateway_client_configmap_data",
-    "build_gateway_client_patch",
-    "build_gateway_patch",
     "get_cluster_dns_ip",
     "reconcile_gateway",
     "reconcile_gateway_client",
-    "reconcile_gateway_client_configmap",
-    "reconcile_kill_switch",
 ]

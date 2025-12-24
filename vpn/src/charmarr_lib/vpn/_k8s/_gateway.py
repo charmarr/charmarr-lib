@@ -142,29 +142,12 @@ def _reconcile_gateway_configmap(
     manager.apply(configmap)
 
 
-def build_gateway_patch(
+def _build_patch(
     configmap_name: str,
     input_cidrs: list[str],
     config_hash: str,
 ) -> dict[str, Any]:
-    """Build strategic merge patch for gateway StatefulSet.
-
-    Adds pod-gateway init container and sidecar to the VPN gateway StatefulSet.
-    Includes a config hash annotation to trigger pod restart when ConfigMap changes.
-
-    Args:
-        configmap_name: Name of the ConfigMap containing pod-gateway settings.
-        input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
-            Pass empty list if VPN solution handles INPUT rules natively.
-        config_hash: Hash of ConfigMap data for pod restart triggering.
-
-    Returns:
-        Strategic merge patch dict for StatefulSet.
-
-    Example:
-        patch = build_gateway_patch("gluetun-gateway-settings", [], "abc12345")
-        manager.patch(StatefulSet, "gluetun", patch, "vpn-gateway")
-    """
+    """Build strategic merge patch for gateway StatefulSet."""
     init_container = _build_gateway_init_container(input_cidrs)
     sidecar = _build_gateway_sidecar_container()
     config_volume = _build_config_volume(configmap_name)
@@ -222,7 +205,7 @@ def reconcile_gateway(
 
     _reconcile_gateway_configmap(manager, configmap_name, namespace, data)
 
-    patch = build_gateway_patch(configmap_name, input_cidrs, config_hash)
+    patch = _build_patch(configmap_name, input_cidrs, config_hash)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
     return ReconcileResult(

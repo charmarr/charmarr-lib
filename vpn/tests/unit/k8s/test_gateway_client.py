@@ -7,18 +7,19 @@ from charmarr_lib.vpn import (
     CLIENT_INIT_CONTAINER_NAME,
     CLIENT_SIDECAR_CONTAINER_NAME,
     POD_GATEWAY_IMAGE,
-    build_gateway_client_configmap_data,
-    build_gateway_client_patch,
     reconcile_gateway_client,
-    reconcile_gateway_client_configmap,
+)
+from charmarr_lib.vpn._k8s._gateway_client import (
+    _build_configmap_data,  # pyright: ignore[reportPrivateUsage]
+    _build_patch,  # pyright: ignore[reportPrivateUsage]
 )
 
-# build_gateway_client_configmap_data
+# _build_configmap_data
 
 
-def test_build_gateway_client_configmap_data_creates_settings():
+def test_build_configmap_data_creates_settings():
     """Creates settings.sh with correct content."""
-    data = build_gateway_client_configmap_data(
+    data = _build_configmap_data(
         dns_server_ip="10.152.183.10",
         cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
         vxlan_id=50,
@@ -32,12 +33,12 @@ def test_build_gateway_client_configmap_data_creates_settings():
     assert 'VXLAN_IP_NETWORK="172.16.0"' in data["settings.sh"]
 
 
-# build_gateway_client_patch
+# _build_patch
 
 
-def test_build_gateway_client_patch_creates_init_container(provider_data):
+def test_build_patch_creates_init_container(provider_data):
     """Patch includes vpn-route-init container with correct config."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
 
     init_containers = patch["spec"]["template"]["spec"]["initContainers"]
     assert len(init_containers) == 1
@@ -46,9 +47,9 @@ def test_build_gateway_client_patch_creates_init_container(provider_data):
     assert init_containers[0]["securityContext"]["capabilities"]["add"] == ["NET_ADMIN"]
 
 
-def test_build_gateway_client_patch_creates_sidecar_container(provider_data):
+def test_build_patch_creates_sidecar_container(provider_data):
     """Patch includes vpn-route-sidecar container with correct config."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
 
     containers = patch["spec"]["template"]["spec"]["containers"]
     assert len(containers) == 1
@@ -57,9 +58,9 @@ def test_build_gateway_client_patch_creates_sidecar_container(provider_data):
     assert containers[0]["securityContext"]["capabilities"]["add"] == ["NET_ADMIN"]
 
 
-def test_build_gateway_client_patch_includes_gateway_env(provider_data):
+def test_build_patch_includes_gateway_env(provider_data):
     """Containers have gateway env var pointing to gateway DNS name."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
 
     init_env = {
         e["name"]: e["value"]
@@ -73,18 +74,18 @@ def test_build_gateway_client_patch_includes_gateway_env(provider_data):
     assert sidecar_env["gateway"] == "gluetun.vpn-gateway.svc.cluster.local"
 
 
-def test_build_gateway_client_patch_includes_configmap_volume(provider_data):
+def test_build_patch_includes_configmap_volume(provider_data):
     """Patch includes ConfigMap volume for settings."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
 
     volumes = patch["spec"]["template"]["spec"]["volumes"]
     assert len(volumes) == 1
     assert volumes[0]["configMap"]["name"] == "vpn-config"
 
 
-def test_build_gateway_client_patch_mounts_config_volume(provider_data):
+def test_build_patch_mounts_config_volume(provider_data):
     """Containers mount the ConfigMap volume at /config."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
 
     init_mounts = patch["spec"]["template"]["spec"]["initContainers"][0]["volumeMounts"]
     sidecar_mounts = patch["spec"]["template"]["spec"]["containers"][0]["volumeMounts"]
@@ -96,9 +97,9 @@ def test_build_gateway_client_patch_mounts_config_volume(provider_data):
     assert sidecar_mounts[0]["mountPath"] == "/config"
 
 
-def test_build_gateway_client_patch_includes_config_hash_annotation(provider_data):
+def test_build_patch_includes_config_hash_annotation(provider_data):
     """Patch includes config hash annotation in pod template metadata."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
 
     annotations = patch["spec"]["template"]["metadata"]["annotations"]
     assert "charmarr.io/gateway-client-config-hash" in annotations
@@ -108,6 +109,18 @@ def test_build_gateway_client_patch_includes_config_hash_annotation(provider_dat
 # reconcile_gateway_client
 
 
+def test_reconcile_gateway_client_applies_configmap(manager, mock_client, provider_data):
+    """Applies ConfigMap with gateway client settings."""
+    reconcile_gateway_client(
+        manager,
+        statefulset_name="qbittorrent",
+        namespace="downloads",
+        data=provider_data,
+    )
+
+    mock_client.apply.assert_called_once()
+
+
 def test_reconcile_gateway_client_patches_statefulset(manager, mock_client, provider_data):
     """Patches StatefulSet with gateway client containers."""
     result = reconcile_gateway_client(
@@ -115,7 +128,6 @@ def test_reconcile_gateway_client_patches_statefulset(manager, mock_client, prov
         statefulset_name="qbittorrent",
         namespace="downloads",
         data=provider_data,
-        configmap_name="vpn-config",
     )
 
     assert result.changed is True
@@ -129,40 +141,50 @@ def test_reconcile_gateway_client_returns_message(manager, mock_client, provider
         statefulset_name="qbittorrent",
         namespace="downloads",
         data=provider_data,
-        configmap_name="vpn-config",
     )
 
     assert "qbittorrent" in result.message
 
 
-# reconcile_gateway_client_configmap
-
-
-def test_reconcile_gateway_client_configmap_applies(manager, mock_client, provider_data):
-    """Applies ConfigMap via server-side apply."""
-    result = reconcile_gateway_client_configmap(
-        manager,
-        configmap_name="vpn-settings",
-        namespace="downloads",
-        data=provider_data,
-    )
-
-    assert result.changed is True
-    assert "Reconciled" in result.message
-    mock_client.apply.assert_called_once()
-
-
-def test_reconcile_gateway_client_configmap_deletes_when_none(manager, mock_client):
-    """Deletes ConfigMap when data is None and it exists."""
+def test_reconcile_gateway_client_cleanup_deletes_configmap(manager, mock_client):
+    """Deletes ConfigMap when data is None."""
     mock_client.get.return_value = object()
 
-    result = reconcile_gateway_client_configmap(
+    reconcile_gateway_client(
         manager,
-        configmap_name="vpn-settings",
+        statefulset_name="qbittorrent",
         namespace="downloads",
         data=None,
     )
 
-    assert result.changed is True
-    assert "Deleted" in result.message
     mock_client.delete.assert_called_once()
+
+
+def test_reconcile_gateway_client_with_killswitch_creates_policy(
+    manager, mock_client, provider_data
+):
+    """Creates NetworkPolicy when killswitch=True."""
+    reconcile_gateway_client(
+        manager,
+        statefulset_name="qbittorrent",
+        namespace="downloads",
+        data=provider_data,
+        killswitch=True,
+    )
+
+    assert mock_client.apply.call_count == 2
+
+
+def test_reconcile_gateway_client_cleanup_with_killswitch_deletes_policy(manager, mock_client):
+    """Deletes NetworkPolicy when data is None and killswitch=True."""
+    mock_client.get.return_value = object()
+
+    reconcile_gateway_client(
+        manager,
+        statefulset_name="qbittorrent",
+        namespace="downloads",
+        data=None,
+        killswitch=True,
+    )
+
+    assert mock_client.delete.call_count == 2

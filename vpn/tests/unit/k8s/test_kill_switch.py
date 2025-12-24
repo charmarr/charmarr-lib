@@ -10,10 +10,11 @@ from httpx import Response
 from lightkube.core.exceptions import ApiError
 
 from charmarr_lib.krm import K8sResourceManager
-from charmarr_lib.vpn._k8s import KillSwitchConfig, reconcile_kill_switch
 from charmarr_lib.vpn._k8s._kill_switch import (
+    KillSwitchConfig,
     _build_kill_switch_policy,  # pyright: ignore[reportPrivateUsage]
     _policy_name,  # pyright: ignore[reportPrivateUsage]
+    reconcile_kill_switch,
 )
 
 
