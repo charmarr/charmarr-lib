@@ -13,7 +13,6 @@ and nat.conf. The pod-gateway scripts source /config/settings.sh, so
 environment variables alone are not sufficient.
 """
 
-import hashlib
 from typing import Any
 
 from lightkube.models.core_v1 import (
@@ -30,6 +29,7 @@ from lightkube.resources.apps_v1 import StatefulSet
 from lightkube.resources.core_v1 import ConfigMap, Service
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
+from charmarr_lib.vpn._k8s._utils import compute_config_hash
 from charmarr_lib.vpn.constants import (
     DEFAULT_VXLAN_GATEWAY_FIRST_DYNAMIC_IP,
     GATEWAY_INIT_CONTAINER_NAME,
@@ -41,12 +41,6 @@ from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
 _CONFIG_VOLUME_NAME = "gateway-config"
 _CONFIG_MOUNT_PATH = "/config"
 _CONFIG_HASH_ANNOTATION = "charmarr.io/gateway-config-hash"
-
-
-def _compute_config_hash(cm_data: dict[str, str]) -> str:
-    """Compute short hash of ConfigMap data for pod restart triggering."""
-    content = "".join(f"{k}={v}" for k, v in sorted(cm_data.items()))
-    return hashlib.sha256(content.encode()).hexdigest()[:8]
 
 
 def _build_config_volume(configmap_name: str) -> Volume:
@@ -201,7 +195,7 @@ def reconcile_gateway(
     """
     configmap_name = f"{statefulset_name}-gateway-settings"
     cm_data = _build_gateway_configmap_data(data)
-    config_hash = _compute_config_hash(cm_data)
+    config_hash = compute_config_hash(cm_data)
 
     _reconcile_gateway_configmap(manager, configmap_name, namespace, data)
 

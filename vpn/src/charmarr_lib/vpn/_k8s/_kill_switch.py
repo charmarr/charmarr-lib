@@ -36,15 +36,7 @@ from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 
 
 class KillSwitchConfig(BaseModel):
-    """Configuration for VPN kill switch NetworkPolicy.
-
-    Example:
-        config = KillSwitchConfig(
-            app_name="qbittorrent",
-            namespace="downloads",
-            cluster_cidrs=["10.42.0.0/16", "10.96.0.0/12"],
-        )
-    """
+    """Configuration for VPN kill switch NetworkPolicy."""
 
     app_name: str = Field(
         description="Application name for pod selector (app.kubernetes.io/name label)",
@@ -67,47 +59,7 @@ def _policy_name(app_name: str) -> str:
 
 
 def _build_kill_switch_policy(config: KillSwitchConfig) -> NetworkPolicy:
-    """Build a NetworkPolicy for VPN kill switch.
-
-    Creates an egress-only NetworkPolicy that allows:
-    - Traffic to cluster CIDRs (pod/service networks) - each CIDR as separate rule
-    - DNS traffic to kube-system namespace (UDP and TCP port 53)
-
-    Args:
-        config: Kill switch configuration.
-
-    Returns:
-        NetworkPolicy lightkube model ready for apply.
-
-    Example NetworkPolicy produced:
-        apiVersion: networking.k8s.io/v1
-        kind: NetworkPolicy
-        metadata:
-          name: qbittorrent-vpn-killswitch
-          namespace: downloads
-        spec:
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: qbittorrent
-          policyTypes:
-            - Egress
-          egress:
-            - to:
-                - ipBlock:
-                    cidr: 10.42.0.0/16
-            - to:
-                - ipBlock:
-                    cidr: 10.96.0.0/12
-            - to:
-                - namespaceSelector:
-                    matchLabels:
-                      kubernetes.io/metadata.name: kube-system
-              ports:
-                - protocol: UDP
-                  port: 53
-                - protocol: TCP
-                  port: 53
-    """
+    """Build egress-only NetworkPolicy allowing cluster CIDRs and DNS to kube-system."""
     egress_rules: list[NetworkPolicyEgressRule] = []
 
     for cidr in config.cluster_cidrs:

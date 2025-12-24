@@ -16,7 +16,6 @@ NOT_ROUTED_TO_GATEWAY_CIDRS) with SPACE-separated CIDRs, unlike gateway
 which uses COMMA-separated. This is a pod-gateway quirk.
 """
 
-import hashlib
 from typing import Any
 
 from lightkube.models.core_v1 import (
@@ -34,6 +33,7 @@ from lightkube.resources.core_v1 import ConfigMap
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 from charmarr_lib.vpn._k8s._kill_switch import KillSwitchConfig, reconcile_kill_switch
+from charmarr_lib.vpn._k8s._utils import compute_config_hash
 from charmarr_lib.vpn.constants import (
     CLIENT_INIT_CONTAINER_NAME,
     CLIENT_SIDECAR_CONTAINER_NAME,
@@ -44,12 +44,6 @@ from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
 _CONFIG_VOLUME_NAME = "pod-gateway-config"
 _CONFIG_MOUNT_PATH = "/config"
 _CONFIG_HASH_ANNOTATION = "charmarr.io/gateway-client-config-hash"
-
-
-def _compute_config_hash(cm_data: dict[str, str]) -> str:
-    """Compute short hash of ConfigMap data for pod restart triggering."""
-    content = "".join(f"{k}={v}" for k, v in sorted(cm_data.items()))
-    return hashlib.sha256(content.encode()).hexdigest()[:8]
 
 
 def _build_gateway_client_init_container(gateway_dns_name: str) -> Container:
@@ -219,7 +213,7 @@ def reconcile_gateway_client(
         cm_data = _build_configmap_data(
             data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
         )
-        config_hash = _compute_config_hash(cm_data)
+        config_hash = compute_config_hash(cm_data)
         patch = _build_patch(data, configmap_name, config_hash)
     else:
         patch = _build_gateway_client_cleanup_patch()
