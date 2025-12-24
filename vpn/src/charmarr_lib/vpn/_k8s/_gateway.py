@@ -184,10 +184,9 @@ def reconcile_gateway(
 ) -> ReconcileResult:
     """Reconcile pod-gateway containers on a VPN gateway StatefulSet.
 
-    This function ensures the VPN gateway StatefulSet has the required
-    pod-gateway containers for VXLAN tunnel and DHCP/DNS services.
-
-    Idempotent - if containers are already present, no changes are made.
+    Ensures the VPN gateway StatefulSet has the required pod-gateway containers
+    for VXLAN tunnel and DHCP/DNS services. Always applies patch to keep env
+    vars in sync with current config.
 
     Args:
         manager: K8sResourceManager instance.
@@ -205,13 +204,13 @@ def reconcile_gateway(
         ApiError: If the StatefulSet doesn't exist or patch fails.
     """
     sts = manager.get(StatefulSet, statefulset_name, namespace)
-
-    if is_gateway_patched(sts):
-        return ReconcileResult(changed=False, message="Gateway containers already present")
+    already_patched = is_gateway_patched(sts)
 
     patch = build_gateway_patch(data, pod_cidr, input_cidrs)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
+    if already_patched:
+        return ReconcileResult(changed=True, message="Updated pod-gateway containers")
     return ReconcileResult(
         changed=True,
         message=f"Added pod-gateway containers to {statefulset_name}",

@@ -152,10 +152,10 @@ def test_reconcile_gateway_patches_when_not_patched(
     mock_client.patch.assert_called_once()
 
 
-def test_reconcile_gateway_skips_when_already_patched(
+def test_reconcile_gateway_updates_when_already_patched(
     manager, mock_client, provider_data, make_statefulset
 ):
-    """Skips patching when gateway containers already present."""
+    """Re-applies patch when gateway containers already present to sync env vars."""
     init = Container(name=GATEWAY_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
     sidecar = Container(name=GATEWAY_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
     mock_client.get.return_value = make_statefulset(init_containers=[init], containers=[sidecar])
@@ -169,8 +169,9 @@ def test_reconcile_gateway_skips_when_already_patched(
         input_cidrs=["10.1.0.0/16"],
     )
 
-    assert result.changed is False
-    mock_client.patch.assert_not_called()
+    assert result.changed is True
+    assert "Updated" in result.message
+    mock_client.patch.assert_called_once()
 
 
 def test_reconcile_gateway_returns_message(manager, mock_client, provider_data, make_statefulset):
