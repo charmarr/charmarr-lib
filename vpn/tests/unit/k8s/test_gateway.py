@@ -56,9 +56,9 @@ def test_is_gateway_patched_false_when_empty(make_statefulset):
 # build_gateway_patch
 
 
-def test_build_gateway_patch_creates_init_container(provider_data):
+def test_build_gateway_patch_creates_init_container():
     """Patch includes gateway-init container with correct config."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
+    patch = build_gateway_patch("gluetun-gateway-settings", ["10.1.0.0/16"])
 
     init_containers = patch["spec"]["template"]["spec"]["initContainers"]
     assert len(init_containers) == 1
@@ -67,9 +67,9 @@ def test_build_gateway_patch_creates_init_container(provider_data):
     assert init_containers[0]["securityContext"]["privileged"] is True
 
 
-def test_build_gateway_patch_creates_sidecar_container(provider_data):
+def test_build_gateway_patch_creates_sidecar_container():
     """Patch includes gateway-sidecar container with correct config."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
+    patch = build_gateway_patch("gluetun-gateway-settings", ["10.1.0.0/16"])
 
     containers = patch["spec"]["template"]["spec"]["containers"]
     assert len(containers) == 1
@@ -78,26 +78,35 @@ def test_build_gateway_patch_creates_sidecar_container(provider_data):
     assert containers[0]["securityContext"]["capabilities"]["add"] == ["NET_ADMIN"]
 
 
-def test_build_gateway_patch_includes_env_vars(provider_data):
-    """Patch includes required environment variables."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
+def test_build_gateway_patch_includes_volume_mounts():
+    """Patch includes volume mounts for ConfigMap on both containers."""
+    patch = build_gateway_patch("gluetun-gateway-settings", [])
 
-    init_env = {
-        e["name"]: e["value"]
-        for e in patch["spec"]["template"]["spec"]["initContainers"][0]["env"]
-    }
+    init_mounts = patch["spec"]["template"]["spec"]["initContainers"][0]["volumeMounts"]
+    assert len(init_mounts) == 1
+    assert init_mounts[0]["name"] == "gateway-config"
+    assert init_mounts[0]["mountPath"] == "/config"
 
-    assert init_env["VXLAN_ID"] == "42"
-    assert init_env["VXLAN_IP_NETWORK"] == "172.16.0"
-    assert init_env["VPN_INTERFACE"] == "tun0"
-    assert init_env["NOT_ROUTED_TO_GATEWAY_CIDRS"] == "10.1.0.0/16,10.152.183.0/24"
-    assert init_env["POD_CIDR"] == "10.1.0.0/16"
+    sidecar_mounts = patch["spec"]["template"]["spec"]["containers"][0]["volumeMounts"]
+    assert len(sidecar_mounts) == 1
+    assert sidecar_mounts[0]["name"] == "gateway-config"
+    assert sidecar_mounts[0]["mountPath"] == "/config"
 
 
-def test_build_gateway_patch_includes_iptables_fix(provider_data):
+def test_build_gateway_patch_includes_configmap_volume():
+    """Patch includes volume for ConfigMap."""
+    patch = build_gateway_patch("gluetun-gateway-settings", [])
+
+    volumes = patch["spec"]["template"]["spec"]["volumes"]
+    assert len(volumes) == 1
+    assert volumes[0]["name"] == "gateway-config"
+    assert volumes[0]["configMap"]["name"] == "gluetun-gateway-settings"
+
+
+def test_build_gateway_patch_includes_iptables_fix():
     """Init container args include iptables rules for input CIDRs."""
     input_cidrs = ["10.1.0.0/16", "192.168.0.0/24"]
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16", input_cidrs)
+    patch = build_gateway_patch("gluetun-gateway-settings", input_cidrs)
 
     init_args = patch["spec"]["template"]["spec"]["initContainers"][0]["args"]
     assert len(init_args) == 1
@@ -105,9 +114,9 @@ def test_build_gateway_patch_includes_iptables_fix(provider_data):
     assert "iptables -I INPUT -i eth0 -s 192.168.0.0/24 -j ACCEPT" in init_args[0]
 
 
-def test_build_gateway_patch_no_iptables_when_empty_cidrs(provider_data):
+def test_build_gateway_patch_no_iptables_when_empty_cidrs():
     """Init container skips iptables rules when input_cidrs is empty."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16", [])
+    patch = build_gateway_patch("gluetun-gateway-settings", [])
 
     init_args = patch["spec"]["template"]["spec"]["initContainers"][0]["args"]
     assert len(init_args) == 1
@@ -115,9 +124,9 @@ def test_build_gateway_patch_no_iptables_when_empty_cidrs(provider_data):
     assert init_args[0] == "/bin/gateway_init.sh"
 
 
-def test_build_gateway_patch_sidecar_has_ports(provider_data):
+def test_build_gateway_patch_sidecar_has_ports():
     """Sidecar container exposes DHCP and DNS ports."""
-    patch = build_gateway_patch(provider_data, "10.1.0.0/16", ["10.1.0.0/16"])
+    patch = build_gateway_patch("gluetun-gateway-settings", ["10.1.0.0/16"])
 
     ports = patch["spec"]["template"]["spec"]["containers"][0]["ports"]
     port_names = {p["name"]: p for p in ports}
@@ -144,7 +153,6 @@ def test_reconcile_gateway_patches_when_not_patched(
         statefulset_name="gluetun",
         namespace="vpn-gateway",
         data=provider_data,
-        pod_cidr="10.1.0.0/16",
         input_cidrs=["10.1.0.0/16"],
     )
 
@@ -152,10 +160,32 @@ def test_reconcile_gateway_patches_when_not_patched(
     mock_client.patch.assert_called_once()
 
 
+def test_reconcile_gateway_creates_configmap(
+    manager, mock_client, provider_data, make_statefulset
+):
+    """Creates ConfigMap with gateway settings."""
+    mock_client.get.return_value = make_statefulset()
+
+    reconcile_gateway(
+        manager,
+        statefulset_name="gluetun",
+        namespace="vpn-gateway",
+        data=provider_data,
+        input_cidrs=[],
+    )
+
+    mock_client.apply.assert_called_once()
+    configmap = mock_client.apply.call_args[0][0]
+    assert configmap.metadata.name == "gluetun-gateway-settings"
+    assert configmap.metadata.namespace == "vpn-gateway"
+    assert "settings.sh" in configmap.data
+    assert 'VXLAN_ID="42"' in configmap.data["settings.sh"]
+
+
 def test_reconcile_gateway_updates_when_already_patched(
     manager, mock_client, provider_data, make_statefulset
 ):
-    """Re-applies patch when gateway containers already present to sync env vars."""
+    """Re-applies patch when gateway containers already present."""
     init = Container(name=GATEWAY_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
     sidecar = Container(name=GATEWAY_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
     mock_client.get.return_value = make_statefulset(init_containers=[init], containers=[sidecar])
@@ -165,7 +195,6 @@ def test_reconcile_gateway_updates_when_already_patched(
         statefulset_name="gluetun",
         namespace="vpn-gateway",
         data=provider_data,
-        pod_cidr="10.1.0.0/16",
         input_cidrs=["10.1.0.0/16"],
     )
 
@@ -183,7 +212,6 @@ def test_reconcile_gateway_returns_message(manager, mock_client, provider_data, 
         statefulset_name="gluetun",
         namespace="vpn-gateway",
         data=provider_data,
-        pod_cidr="10.1.0.0/16",
         input_cidrs=["10.1.0.0/16"],
     )
 

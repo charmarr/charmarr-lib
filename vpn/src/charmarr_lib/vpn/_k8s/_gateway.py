@@ -7,19 +7,26 @@ Adds init container and sidecar to the VPN gateway (gluetun-k8s) StatefulSet
 to handle VXLAN tunnel creation and DHCP/DNS services for client pods.
 
 Based on validated configuration from vxlan-validation-plan.md.
+
+Note: Gateway containers use a ConfigMap mounted at /config with settings.sh
+and nat.conf. The pod-gateway scripts source /config/settings.sh, so
+environment variables alone are not sufficient.
 """
 
 from typing import Any
 
 from lightkube.models.core_v1 import (
     Capabilities,
+    ConfigMapVolumeSource,
     Container,
     ContainerPort,
-    EnvVar,
     SecurityContext,
+    Volume,
+    VolumeMount,
 )
+from lightkube.models.meta_v1 import ObjectMeta
 from lightkube.resources.apps_v1 import StatefulSet
-from lightkube.resources.core_v1 import Service
+from lightkube.resources.core_v1 import ConfigMap, Service
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 from charmarr_lib.vpn.constants import (
@@ -30,33 +37,19 @@ from charmarr_lib.vpn.constants import (
 )
 from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
 
-
-def _build_gateway_env_vars(data: VPNGatewayProviderData, pod_cidr: str) -> list[EnvVar]:
-    """Build environment variables for gateway containers.
-
-    Args:
-        data: VPN gateway provider data from relation.
-        pod_cidr: Pod network CIDR for iptables rule (e.g., "10.1.0.0/16").
-    """
-    return [
-        EnvVar(name="VXLAN_ID", value=str(data.vxlan_id)),
-        EnvVar(name="VXLAN_IP_NETWORK", value=data.vxlan_ip_network),
-        EnvVar(
-            name="VXLAN_GATEWAY_FIRST_DYNAMIC_IP",
-            value=str(DEFAULT_VXLAN_GATEWAY_FIRST_DYNAMIC_IP),
-        ),
-        EnvVar(name="VPN_INTERFACE", value="tun0"),
-        EnvVar(name="VPN_BLOCK_OTHER_TRAFFIC", value="true"),
-        EnvVar(name="NOT_ROUTED_TO_GATEWAY_CIDRS", value=data.cluster_cidrs),
-        EnvVar(name="POD_CIDR", value=pod_cidr),
-    ]
+_CONFIG_VOLUME_NAME = "gateway-config"
+_CONFIG_MOUNT_PATH = "/config"
 
 
-def _build_gateway_init_container(
-    data: VPNGatewayProviderData,
-    pod_cidr: str,
-    input_cidrs: list[str],
-) -> Container:
+def _build_config_volume(configmap_name: str) -> Volume:
+    """Build ConfigMap volume for gateway settings."""
+    return Volume(
+        name=_CONFIG_VOLUME_NAME,
+        configMap=ConfigMapVolumeSource(name=configmap_name),
+    )
+
+
+def _build_gateway_init_container(input_cidrs: list[str]) -> Container:
     """Build gateway-init container spec.
 
     The init container:
@@ -66,8 +59,6 @@ def _build_gateway_init_container(
     - Requires privileged mode for sysctl ip_forward
 
     Args:
-        data: VPN gateway provider data from relation.
-        pod_cidr: Pod network CIDR for env vars (e.g., "10.1.0.0/16").
         input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
             Pass empty list if VPN solution handles INPUT rules natively
             (e.g., gluetun's /iptables/post-rules.txt).
@@ -86,11 +77,11 @@ def _build_gateway_init_container(
         command=["/bin/sh", "-c"],
         args=[command_args],
         securityContext=SecurityContext(privileged=True),
-        env=_build_gateway_env_vars(data, pod_cidr),
+        volumeMounts=[VolumeMount(name=_CONFIG_VOLUME_NAME, mountPath=_CONFIG_MOUNT_PATH)],
     )
 
 
-def _build_gateway_sidecar_container(data: VPNGatewayProviderData, pod_cidr: str) -> Container:
+def _build_gateway_sidecar_container() -> Container:
     """Build gateway-sidecar container spec.
 
     The sidecar container:
@@ -103,7 +94,7 @@ def _build_gateway_sidecar_container(data: VPNGatewayProviderData, pod_cidr: str
         image=POD_GATEWAY_IMAGE,
         command=["/bin/gateway_sidecar.sh"],
         securityContext=SecurityContext(capabilities=Capabilities(add=["NET_ADMIN"])),
-        env=_build_gateway_env_vars(data, pod_cidr),
+        volumeMounts=[VolumeMount(name=_CONFIG_VOLUME_NAME, mountPath=_CONFIG_MOUNT_PATH)],
         ports=[
             ContainerPort(name="dhcp", containerPort=67, protocol="UDP"),
             ContainerPort(name="dns", containerPort=53, protocol="UDP"),
@@ -111,9 +102,40 @@ def _build_gateway_sidecar_container(data: VPNGatewayProviderData, pod_cidr: str
     )
 
 
-def build_gateway_patch(
+def _build_gateway_configmap_data(data: VPNGatewayProviderData) -> dict[str, str]:
+    """Build ConfigMap data for gateway pod-gateway settings."""
+    settings = "\n".join(
+        [
+            f'VXLAN_ID="{data.vxlan_id}"',
+            f'VXLAN_IP_NETWORK="{data.vxlan_ip_network}"',
+            f'VXLAN_GATEWAY_FIRST_DYNAMIC_IP="{DEFAULT_VXLAN_GATEWAY_FIRST_DYNAMIC_IP}"',
+        ]
+    )
+    return {
+        "settings.sh": settings,
+        "nat.conf": "",
+    }
+
+
+def _reconcile_gateway_configmap(
+    manager: K8sResourceManager,
+    configmap_name: str,
+    namespace: str,
     data: VPNGatewayProviderData,
-    pod_cidr: str,
+) -> None:
+    """Reconcile ConfigMap for gateway pod-gateway settings."""
+    cm_data = _build_gateway_configmap_data(data)
+
+    configmap = ConfigMap(
+        metadata=ObjectMeta(name=configmap_name, namespace=namespace),
+        data=cm_data,
+    )
+
+    manager.apply(configmap)
+
+
+def build_gateway_patch(
+    configmap_name: str,
     input_cidrs: list[str],
 ) -> dict[str, Any]:
     """Build strategic merge patch for gateway StatefulSet.
@@ -121,8 +143,7 @@ def build_gateway_patch(
     Adds pod-gateway init container and sidecar to the VPN gateway StatefulSet.
 
     Args:
-        data: VPN gateway provider data containing VXLAN config.
-        pod_cidr: Pod network CIDR for env vars (e.g., "10.1.0.0/16").
+        configmap_name: Name of the ConfigMap containing pod-gateway settings.
         input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
             Pass empty list if VPN solution handles INPUT rules natively.
 
@@ -130,12 +151,12 @@ def build_gateway_patch(
         Strategic merge patch dict for StatefulSet.
 
     Example:
-        cidrs = ["10.1.0.0/16", "10.152.183.0/24", "192.168.0.0/24"]
-        patch = build_gateway_patch(provider_data, "10.1.0.0/16", cidrs)
+        patch = build_gateway_patch("gluetun-gateway-settings", [])
         manager.patch(StatefulSet, "gluetun", patch, "vpn-gateway")
     """
-    init_container = _build_gateway_init_container(data, pod_cidr, input_cidrs)
-    sidecar = _build_gateway_sidecar_container(data, pod_cidr)
+    init_container = _build_gateway_init_container(input_cidrs)
+    sidecar = _build_gateway_sidecar_container()
+    config_volume = _build_config_volume(configmap_name)
 
     return {
         "spec": {
@@ -143,6 +164,7 @@ def build_gateway_patch(
                 "spec": {
                     "initContainers": [init_container.to_dict()],
                     "containers": [sidecar.to_dict()],
+                    "volumes": [config_volume.to_dict()],
                 }
             }
         }
@@ -179,23 +201,22 @@ def reconcile_gateway(
     statefulset_name: str,
     namespace: str,
     data: VPNGatewayProviderData,
-    pod_cidr: str,
     input_cidrs: list[str],
 ) -> ReconcileResult:
     """Reconcile pod-gateway containers on a VPN gateway StatefulSet.
 
     Ensures the VPN gateway StatefulSet has the required pod-gateway containers
-    for VXLAN tunnel and DHCP/DNS services. Always applies patch to keep env
-    vars in sync with current config.
+    for VXLAN tunnel and DHCP/DNS services. Creates/updates a ConfigMap with
+    pod-gateway settings and patches the StatefulSet.
 
     Args:
         manager: K8sResourceManager instance.
         statefulset_name: Name of the StatefulSet (usually self.app.name).
         namespace: Kubernetes namespace (usually self.model.name).
         data: VPN gateway provider data containing VXLAN config.
-        pod_cidr: Pod network CIDR for env vars (e.g., "10.1.0.0/16").
         input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
-            Pass empty list if VPN solution handles INPUT rules natively.
+            Pass empty list if VPN solution handles INPUT rules natively
+            (e.g., gluetun's /iptables/post-rules.txt).
 
     Returns:
         ReconcileResult indicating if changes were made.
@@ -203,10 +224,14 @@ def reconcile_gateway(
     Raises:
         ApiError: If the StatefulSet doesn't exist or patch fails.
     """
+    configmap_name = f"{statefulset_name}-gateway-settings"
+
+    _reconcile_gateway_configmap(manager, configmap_name, namespace, data)
+
     sts = manager.get(StatefulSet, statefulset_name, namespace)
     already_patched = is_gateway_patched(sts)
 
-    patch = build_gateway_patch(data, pod_cidr, input_cidrs)
+    patch = build_gateway_patch(configmap_name, input_cidrs)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
     if already_patched:
