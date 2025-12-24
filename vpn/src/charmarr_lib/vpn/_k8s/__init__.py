@@ -27,13 +27,11 @@ See ADRs:
 from charmarr_lib.vpn._k8s._gateway import (
     build_gateway_patch,
     get_cluster_dns_ip,
-    is_gateway_patched,
     reconcile_gateway,
 )
 from charmarr_lib.vpn._k8s._gateway_client import (
     build_gateway_client_configmap_data,
     build_gateway_client_patch,
-    is_gateway_client_patched,
     reconcile_gateway_client,
     reconcile_gateway_client_configmap,
 )
@@ -48,8 +46,6 @@ __all__ = [
     "build_gateway_client_patch",
     "build_gateway_patch",
     "get_cluster_dns_ip",
-    "is_gateway_client_patched",
-    "is_gateway_patched",
     "reconcile_gateway",
     "reconcile_gateway_client",
     "reconcile_gateway_client_configmap",

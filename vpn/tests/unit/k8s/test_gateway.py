@@ -6,7 +6,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from lightkube.models.core_v1 import Container, ServiceSpec
+from lightkube.models.core_v1 import ServiceSpec
 
 from charmarr_lib.vpn import (
     GATEWAY_INIT_CONTAINER_NAME,
@@ -14,44 +14,8 @@ from charmarr_lib.vpn import (
     POD_GATEWAY_IMAGE,
     build_gateway_patch,
     get_cluster_dns_ip,
-    is_gateway_patched,
     reconcile_gateway,
 )
-
-# is_gateway_patched
-
-
-def test_is_gateway_patched_true_when_both_exist(make_statefulset):
-    """Returns True when init and sidecar containers both exist."""
-    init = Container(name=GATEWAY_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sidecar = Container(name=GATEWAY_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(init_containers=[init], containers=[sidecar])
-
-    assert is_gateway_patched(sts) is True
-
-
-def test_is_gateway_patched_false_when_no_init(make_statefulset):
-    """Returns False when init container missing."""
-    sidecar = Container(name=GATEWAY_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(containers=[sidecar])
-
-    assert is_gateway_patched(sts) is False
-
-
-def test_is_gateway_patched_false_when_no_sidecar(make_statefulset):
-    """Returns False when sidecar container missing."""
-    init = Container(name=GATEWAY_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(init_containers=[init])
-
-    assert is_gateway_patched(sts) is False
-
-
-def test_is_gateway_patched_false_when_empty(make_statefulset):
-    """Returns False when no pod-gateway containers."""
-    sts = make_statefulset()
-
-    assert is_gateway_patched(sts) is False
-
 
 # build_gateway_patch
 

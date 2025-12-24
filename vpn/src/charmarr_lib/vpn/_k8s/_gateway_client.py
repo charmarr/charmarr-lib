@@ -117,35 +117,41 @@ def reconcile_gateway_client_configmap(
     manager: K8sResourceManager,
     configmap_name: str,
     namespace: str,
-    dns_server_ip: str,
-    cluster_cidrs: str,
-    vxlan_id: int,
-    vxlan_ip_network: str,
+    data: VPNGatewayProviderData | None,
 ) -> ReconcileResult:
     """Reconcile ConfigMap for gateway client pod-gateway settings.
 
-    Creates or updates the ConfigMap containing settings for pod-gateway
-    client containers (K8S_DNS_IPS, NOT_ROUTED_TO_GATEWAY_CIDRS, VXLAN_ID).
+    When data is provided, creates or updates the ConfigMap. When data is None,
+    deletes the ConfigMap if it exists.
 
     Args:
         manager: K8sResourceManager instance.
         configmap_name: Name for the ConfigMap.
         namespace: Kubernetes namespace.
-        dns_server_ip: Kubernetes DNS server IP (e.g., "10.152.183.10").
-        cluster_cidrs: Cluster CIDRs for bypass (comma or space-separated).
-        vxlan_id: VXLAN tunnel ID (must match gateway).
-        vxlan_ip_network: First 3 octets of VXLAN subnet (must match gateway).
+        data: VPN gateway provider data, or None to delete the ConfigMap.
 
     Returns:
         ReconcileResult indicating if changes were made.
     """
-    data = build_gateway_client_configmap_data(
-        dns_server_ip, cluster_cidrs, vxlan_id, vxlan_ip_network
+    if data is None:
+        if not manager.exists(ConfigMap, configmap_name, namespace):
+            return ReconcileResult(
+                changed=False,
+                message=f"Gateway client ConfigMap {configmap_name} not present",
+            )
+        manager.delete(ConfigMap, configmap_name, namespace)
+        return ReconcileResult(
+            changed=True,
+            message=f"Deleted gateway client ConfigMap {configmap_name}",
+        )
+
+    cm_data = build_gateway_client_configmap_data(
+        data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
     )
 
     configmap = ConfigMap(
         metadata=ObjectMeta(name=configmap_name, namespace=namespace),
-        data=data,
+        data=cm_data,
     )
 
     manager.apply(configmap)
@@ -187,42 +193,43 @@ def build_gateway_client_patch(
     }
 
 
-def is_gateway_client_patched(sts: StatefulSet) -> bool:
-    """Check if StatefulSet already has pod-gateway client containers."""
-    if sts.spec is None or sts.spec.template.spec is None:
-        return False
-
-    spec = sts.spec.template.spec
-
-    has_init = False
-    if spec.initContainers:
-        has_init = any(c.name == CLIENT_INIT_CONTAINER_NAME for c in spec.initContainers)
-
-    has_sidecar = False
-    if spec.containers:
-        has_sidecar = any(c.name == CLIENT_SIDECAR_CONTAINER_NAME for c in spec.containers)
-
-    return has_init and has_sidecar
+def _build_gateway_client_cleanup_patch() -> dict[str, Any]:
+    """Build patch to remove gateway client containers, volume, and annotation."""
+    return {
+        "spec": {
+            "template": {
+                "metadata": {
+                    "annotations": {
+                        _CONFIG_HASH_ANNOTATION: None,
+                    }
+                },
+                "spec": {
+                    "initContainers": [{"$patch": "delete", "name": CLIENT_INIT_CONTAINER_NAME}],
+                    "containers": [{"$patch": "delete", "name": CLIENT_SIDECAR_CONTAINER_NAME}],
+                    "volumes": [{"$patch": "delete", "name": _CONFIG_VOLUME_NAME}],
+                },
+            }
+        }
+    }
 
 
 def reconcile_gateway_client(
     manager: K8sResourceManager,
     statefulset_name: str,
     namespace: str,
-    data: VPNGatewayProviderData,
+    data: VPNGatewayProviderData | None,
     configmap_name: str,
 ) -> ReconcileResult:
     """Reconcile pod-gateway client containers on a StatefulSet.
 
-    This function ensures the download client StatefulSet has the required
-    pod-gateway containers to route traffic through the VPN gateway.
-    Includes a config hash annotation to trigger pod restart when settings change.
+    When data is provided, ensures the download client StatefulSet has the required
+    pod-gateway containers. When data is None, removes containers, volume, and annotation.
 
     Args:
         manager: K8sResourceManager instance.
         statefulset_name: Name of the StatefulSet (usually self.app.name).
         namespace: Kubernetes namespace (usually self.model.name).
-        data: VPN gateway provider data from relation.
+        data: VPN gateway provider data from relation, or None to clean up.
         configmap_name: Name of the ConfigMap containing pod-gateway settings.
 
     Returns:
@@ -231,12 +238,20 @@ def reconcile_gateway_client(
     Raises:
         ApiError: If the StatefulSet doesn't exist or patch fails.
     """
-    cm_data = build_gateway_client_configmap_data(
-        data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
+    cm_data = (
+        build_gateway_client_configmap_data(
+            data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
+        )
+        if data
+        else {}
     )
-    config_hash = _compute_config_hash(cm_data)
+    config_hash = _compute_config_hash(cm_data) if cm_data else None
 
-    patch = build_gateway_client_patch(data, configmap_name, config_hash)
+    patch = (
+        build_gateway_client_patch(data, configmap_name, config_hash)  # pyright: ignore[reportArgumentType]
+        if data
+        else _build_gateway_client_cleanup_patch()
+    )
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
     return ReconcileResult(

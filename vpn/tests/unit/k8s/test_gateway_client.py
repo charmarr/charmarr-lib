@@ -3,55 +3,15 @@
 
 """Unit tests for gateway client StatefulSet patching."""
 
-from lightkube.models.core_v1 import Container
-
 from charmarr_lib.vpn import (
     CLIENT_INIT_CONTAINER_NAME,
     CLIENT_SIDECAR_CONTAINER_NAME,
     POD_GATEWAY_IMAGE,
     build_gateway_client_configmap_data,
     build_gateway_client_patch,
-    is_gateway_client_patched,
     reconcile_gateway_client,
     reconcile_gateway_client_configmap,
 )
-
-# is_gateway_client_patched
-
-
-def test_is_gateway_client_patched_true_when_both_exist(make_statefulset):
-    """Returns True when init and sidecar containers both exist."""
-    init = Container(name=CLIENT_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sidecar = Container(name=CLIENT_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(
-        name="qbittorrent", namespace="downloads", init_containers=[init], containers=[sidecar]
-    )
-
-    assert is_gateway_client_patched(sts) is True
-
-
-def test_is_gateway_client_patched_false_when_no_init(make_statefulset):
-    """Returns False when init container missing."""
-    sidecar = Container(name=CLIENT_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(name="qbittorrent", namespace="downloads", containers=[sidecar])
-
-    assert is_gateway_client_patched(sts) is False
-
-
-def test_is_gateway_client_patched_false_when_no_sidecar(make_statefulset):
-    """Returns False when sidecar container missing."""
-    init = Container(name=CLIENT_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sts = make_statefulset(name="qbittorrent", namespace="downloads", init_containers=[init])
-
-    assert is_gateway_client_patched(sts) is False
-
-
-def test_is_gateway_client_patched_false_when_empty(make_statefulset):
-    """Returns False when no pod-gateway containers."""
-    sts = make_statefulset(name="qbittorrent", namespace="downloads")
-
-    assert is_gateway_client_patched(sts) is False
-
 
 # build_gateway_client_configmap_data
 
@@ -178,18 +138,31 @@ def test_reconcile_gateway_client_returns_message(manager, mock_client, provider
 # reconcile_gateway_client_configmap
 
 
-def test_reconcile_gateway_client_configmap_applies(manager, mock_client):
+def test_reconcile_gateway_client_configmap_applies(manager, mock_client, provider_data):
     """Applies ConfigMap via server-side apply."""
     result = reconcile_gateway_client_configmap(
         manager,
         configmap_name="vpn-settings",
         namespace="downloads",
-        dns_server_ip="10.152.183.10",
-        cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
-        vxlan_id=50,
-        vxlan_ip_network="172.16.0",
+        data=provider_data,
     )
 
     assert result.changed is True
     assert "Reconciled" in result.message
     mock_client.apply.assert_called_once()
+
+
+def test_reconcile_gateway_client_configmap_deletes_when_none(manager, mock_client):
+    """Deletes ConfigMap when data is None and it exists."""
+    mock_client.get.return_value = object()
+
+    result = reconcile_gateway_client_configmap(
+        manager,
+        configmap_name="vpn-settings",
+        namespace="downloads",
+        data=None,
+    )
+
+    assert result.changed is True
+    assert "Deleted" in result.message
+    mock_client.delete.assert_called_once()

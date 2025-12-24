@@ -187,31 +187,6 @@ def build_gateway_patch(
     }
 
 
-def is_gateway_patched(sts: StatefulSet) -> bool:
-    """Check if gateway StatefulSet already has pod-gateway containers.
-
-    Args:
-        sts: The StatefulSet to check.
-
-    Returns:
-        True if both gateway-init and gateway-sidecar are present.
-    """
-    if sts.spec is None or sts.spec.template.spec is None:
-        return False
-
-    spec = sts.spec.template.spec
-
-    has_init = False
-    if spec.initContainers:
-        has_init = any(c.name == GATEWAY_INIT_CONTAINER_NAME for c in spec.initContainers)
-
-    has_sidecar = False
-    if spec.containers:
-        has_sidecar = any(c.name == GATEWAY_SIDECAR_CONTAINER_NAME for c in spec.containers)
-
-    return has_init and has_sidecar
-
-
 def reconcile_gateway(
     manager: K8sResourceManager,
     statefulset_name: str,
