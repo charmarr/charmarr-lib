@@ -25,3 +25,9 @@ CLIENT_SIDECAR_CONTAINER_NAME = "vpn-route-sidecar"
 # These must be exposed via Juju set_ports() for client connectivity
 GATEWAY_DHCP_PORT = 67
 GATEWAY_DNS_PORT = 53
+
+# Istio ambient mode ztunnel link-local address.
+# ztunnel uses SNAT with this address for pod communication (probes, mesh traffic).
+# VPN providers should include this in cluster_cidrs so client responses reach ztunnel.
+# See ADR: networking/adr-005-istio-mesh-vpn-integration.md
+ISTIO_ZTUNNEL_LINK_LOCAL = "169.254.7.127/32"

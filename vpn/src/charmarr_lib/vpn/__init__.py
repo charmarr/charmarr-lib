@@ -20,6 +20,7 @@ from charmarr_lib.vpn.constants import (
     GATEWAY_DNS_PORT,
     GATEWAY_INIT_CONTAINER_NAME,
     GATEWAY_SIDECAR_CONTAINER_NAME,
+    ISTIO_ZTUNNEL_LINK_LOCAL,
     POD_GATEWAY_IMAGE,
 )
 
@@ -35,6 +36,7 @@ __all__ = [
     "GATEWAY_DNS_PORT",
     "GATEWAY_INIT_CONTAINER_NAME",
     "GATEWAY_SIDECAR_CONTAINER_NAME",
+    "ISTIO_ZTUNNEL_LINK_LOCAL",
     "POD_GATEWAY_IMAGE",
     "get_cluster_dns_ip",
     "reconcile_gateway",
