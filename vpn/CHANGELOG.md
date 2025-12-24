@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.3.0...charmarr-lib-vpn-v0.4.0) (2025-12-24)
+
+
+### Features
+
+* **vpn:** simplifies public api ([5fce14f](https://github.com/charmarr/charmarr-lib/commit/5fce14f8b296dd30f0e0aea3e435b6189e13a5c3))
+
 ## [0.3.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.2.2...charmarr-lib-vpn-v0.3.0) (2025-12-24)
 
 
