@@ -24,13 +24,12 @@ Validated: vxlan-validation-plan.md (2025-12-11)
 from lightkube.models.meta_v1 import LabelSelector, ObjectMeta
 from lightkube.models.networking_v1 import (
     IPBlock,
-    NetworkPolicy,
     NetworkPolicyEgressRule,
     NetworkPolicyPeer,
     NetworkPolicyPort,
     NetworkPolicySpec,
 )
-from lightkube.resources.networking_v1 import NetworkPolicy as NetworkPolicyResource
+from lightkube.resources.networking_v1 import NetworkPolicy
 from pydantic import BaseModel, Field
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
@@ -186,19 +185,19 @@ def reconcile_kill_switch(
     policy_name = _policy_name(app_name)
 
     if config is None:
-        if not manager.exists(NetworkPolicyResource, policy_name, namespace):
+        if not manager.exists(NetworkPolicy, policy_name, namespace):
             return ReconcileResult(
                 changed=False,
                 message=f"Kill switch NetworkPolicy {policy_name} not present",
             )
-        manager.delete(NetworkPolicyResource, policy_name, namespace)
+        manager.delete(NetworkPolicy, policy_name, namespace)
         return ReconcileResult(
             changed=True,
             message=f"Deleted kill switch NetworkPolicy {policy_name}",
         )
 
     policy = _build_kill_switch_policy(config)
-    existed = manager.exists(NetworkPolicyResource, policy_name, namespace)
+    existed = manager.exists(NetworkPolicy, policy_name, namespace)
     manager.apply(policy)
 
     if existed:
