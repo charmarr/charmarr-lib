@@ -64,11 +64,15 @@ def test_build_gateway_client_configmap_data_creates_settings():
     data = build_gateway_client_configmap_data(
         dns_server_ip="10.152.183.10",
         cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
+        vxlan_id=50,
+        vxlan_ip_network="172.16.0",
     )
 
     assert "settings.sh" in data
     assert 'K8S_DNS_IPS="10.152.183.10"' in data["settings.sh"]
     assert 'NOT_ROUTED_TO_GATEWAY_CIDRS="10.1.0.0/16 10.152.183.0/24"' in data["settings.sh"]
+    assert 'VXLAN_ID="50"' in data["settings.sh"]
+    assert 'VXLAN_IP_NETWORK="172.16.0"' in data["settings.sh"]
 
 
 # build_gateway_client_patch
@@ -210,6 +214,8 @@ def test_reconcile_gateway_client_configmap_creates_when_not_exists(manager, moc
         namespace="downloads",
         dns_server_ip="10.152.183.10",
         cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
+        vxlan_id=50,
+        vxlan_ip_network="172.16.0",
     )
 
     assert result.changed is True
@@ -227,6 +233,8 @@ def test_reconcile_gateway_client_configmap_updates_when_exists(manager, mock_cl
         namespace="downloads",
         dns_server_ip="10.152.183.10",
         cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
+        vxlan_id=50,
+        vxlan_ip_network="172.16.0",
     )
 
     assert result.changed is True

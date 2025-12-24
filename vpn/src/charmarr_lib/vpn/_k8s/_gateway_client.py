@@ -78,6 +78,8 @@ def _build_config_volume(configmap_name: str) -> Volume:
 def build_gateway_client_configmap_data(
     dns_server_ip: str,
     cluster_cidrs: str,
+    vxlan_id: int,
+    vxlan_ip_network: str,
 ) -> dict[str, str]:
     """Build ConfigMap data for gateway client pod-gateway settings.
 
@@ -85,12 +87,21 @@ def build_gateway_client_configmap_data(
         dns_server_ip: Kubernetes DNS server IP (e.g., "10.152.183.10").
         cluster_cidrs: Cluster CIDRs for bypass (comma or space-separated).
                        Will be normalized to space-separated for pod-gateway.
+        vxlan_id: VXLAN tunnel ID (must match gateway).
+        vxlan_ip_network: First 3 octets of VXLAN subnet (must match gateway).
 
     Returns:
         Dict with settings.sh content for ConfigMap data field.
     """
     cidrs_normalized = " ".join(c.strip() for c in cluster_cidrs.replace(",", " ").split())
-    settings = f'K8S_DNS_IPS="{dns_server_ip}"\nNOT_ROUTED_TO_GATEWAY_CIDRS="{cidrs_normalized}"'
+    settings = "\n".join(
+        [
+            f'K8S_DNS_IPS="{dns_server_ip}"',
+            f'NOT_ROUTED_TO_GATEWAY_CIDRS="{cidrs_normalized}"',
+            f'VXLAN_ID="{vxlan_id}"',
+            f'VXLAN_IP_NETWORK="{vxlan_ip_network}"',
+        ]
+    )
     return {"settings.sh": settings}
 
 
@@ -100,23 +111,29 @@ def reconcile_gateway_client_configmap(
     namespace: str,
     dns_server_ip: str,
     cluster_cidrs: str,
+    vxlan_id: int,
+    vxlan_ip_network: str,
 ) -> ReconcileResult:
     """Reconcile ConfigMap for gateway client pod-gateway settings.
 
     Creates or updates the ConfigMap containing settings for pod-gateway
-    client containers (K8S_DNS_IPS, NOT_ROUTED_TO_GATEWAY_CIDRS).
+    client containers (K8S_DNS_IPS, NOT_ROUTED_TO_GATEWAY_CIDRS, VXLAN_ID).
 
     Args:
         manager: K8sResourceManager instance.
         configmap_name: Name for the ConfigMap.
         namespace: Kubernetes namespace.
         dns_server_ip: Kubernetes DNS server IP (e.g., "10.152.183.10").
-        cluster_cidrs: Space-separated cluster CIDRs for bypass.
+        cluster_cidrs: Cluster CIDRs for bypass (comma or space-separated).
+        vxlan_id: VXLAN tunnel ID (must match gateway).
+        vxlan_ip_network: First 3 octets of VXLAN subnet (must match gateway).
 
     Returns:
         ReconcileResult indicating if changes were made.
     """
-    data = build_gateway_client_configmap_data(dns_server_ip, cluster_cidrs)
+    data = build_gateway_client_configmap_data(
+        dns_server_ip, cluster_cidrs, vxlan_id, vxlan_ip_network
+    )
 
     configmap = ConfigMap(
         metadata=ObjectMeta(name=configmap_name, namespace=namespace),
