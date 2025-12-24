@@ -16,6 +16,7 @@ NOT_ROUTED_TO_GATEWAY_CIDRS) with SPACE-separated CIDRs, unlike gateway
 which uses COMMA-separated. This is a pod-gateway quirk.
 """
 
+import hashlib
 from typing import Any
 
 from lightkube.models.core_v1 import (
@@ -41,6 +42,13 @@ from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
 
 _CONFIG_VOLUME_NAME = "pod-gateway-config"
 _CONFIG_MOUNT_PATH = "/config"
+_CONFIG_HASH_ANNOTATION = "charmarr.io/gateway-client-config-hash"
+
+
+def _compute_config_hash(cm_data: dict[str, str]) -> str:
+    """Compute short hash of ConfigMap data for pod restart triggering."""
+    content = "".join(f"{k}={v}" for k, v in sorted(cm_data.items()))
+    return hashlib.sha256(content.encode()).hexdigest()[:8]
 
 
 def _build_gateway_client_init_container(gateway_dns_name: str) -> Container:
@@ -140,25 +148,23 @@ def reconcile_gateway_client_configmap(
         data=data,
     )
 
-    existed = manager.exists(ConfigMap, configmap_name, namespace)
     manager.apply(configmap)
 
-    if existed:
-        return ReconcileResult(
-            changed=True,
-            message=f"Updated gateway client ConfigMap {configmap_name}",
-        )
     return ReconcileResult(
         changed=True,
-        message=f"Created gateway client ConfigMap {configmap_name}",
+        message=f"Reconciled gateway client ConfigMap {configmap_name}",
     )
 
 
 def build_gateway_client_patch(
     data: VPNGatewayProviderData,
     configmap_name: str,
+    config_hash: str,
 ) -> dict[str, Any]:
-    """Build strategic merge patch for gateway client StatefulSet."""
+    """Build strategic merge patch for gateway client StatefulSet.
+
+    Includes a config hash annotation to trigger pod restart when settings change.
+    """
     init_container = _build_gateway_client_init_container(data.gateway_dns_name)
     sidecar = _build_gateway_client_sidecar_container(data.gateway_dns_name)
     config_volume = _build_config_volume(configmap_name)
@@ -166,11 +172,16 @@ def build_gateway_client_patch(
     return {
         "spec": {
             "template": {
+                "metadata": {
+                    "annotations": {
+                        _CONFIG_HASH_ANNOTATION: config_hash,
+                    }
+                },
                 "spec": {
                     "initContainers": [init_container.to_dict()],
                     "containers": [sidecar.to_dict()],
                     "volumes": [config_volume.to_dict()],
-                }
+                },
             }
         }
     }
@@ -205,11 +216,7 @@ def reconcile_gateway_client(
 
     This function ensures the download client StatefulSet has the required
     pod-gateway containers to route traffic through the VPN gateway.
-
-    Idempotent - if containers are already present, no changes are made.
-
-    Note: The charm must create a ConfigMap with settings BEFORE calling this.
-    Use build_gateway_client_configmap_data() to generate ConfigMap content.
+    Includes a config hash annotation to trigger pod restart when settings change.
 
     Args:
         manager: K8sResourceManager instance.
@@ -224,15 +231,15 @@ def reconcile_gateway_client(
     Raises:
         ApiError: If the StatefulSet doesn't exist or patch fails.
     """
-    sts = manager.get(StatefulSet, statefulset_name, namespace)
+    cm_data = build_gateway_client_configmap_data(
+        data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
+    )
+    config_hash = _compute_config_hash(cm_data)
 
-    if is_gateway_client_patched(sts):
-        return ReconcileResult(changed=False, message="Gateway client containers already present")
-
-    patch = build_gateway_client_patch(data, configmap_name)
+    patch = build_gateway_client_patch(data, configmap_name, config_hash)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
     return ReconcileResult(
         changed=True,
-        message=f"Added pod-gateway client containers to {statefulset_name}",
+        message=f"Reconciled pod-gateway client on {statefulset_name}",
     )

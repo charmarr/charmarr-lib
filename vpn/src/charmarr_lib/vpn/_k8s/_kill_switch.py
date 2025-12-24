@@ -197,15 +197,9 @@ def reconcile_kill_switch(
         )
 
     policy = _build_kill_switch_policy(config)
-    existed = manager.exists(NetworkPolicy, policy_name, namespace)
     manager.apply(policy)
 
-    if existed:
-        return ReconcileResult(
-            changed=True,
-            message=f"Updated kill switch NetworkPolicy {policy_name}",
-        )
     return ReconcileResult(
         changed=True,
-        message=f"Created kill switch NetworkPolicy {policy_name}",
+        message=f"Reconciled kill switch NetworkPolicy {policy_name}",
     )

@@ -13,6 +13,7 @@ and nat.conf. The pod-gateway scripts source /config/settings.sh, so
 environment variables alone are not sufficient.
 """
 
+import hashlib
 from typing import Any
 
 from lightkube.models.core_v1 import (
@@ -39,6 +40,13 @@ from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
 
 _CONFIG_VOLUME_NAME = "gateway-config"
 _CONFIG_MOUNT_PATH = "/config"
+_CONFIG_HASH_ANNOTATION = "charmarr.io/gateway-config-hash"
+
+
+def _compute_config_hash(cm_data: dict[str, str]) -> str:
+    """Compute short hash of ConfigMap data for pod restart triggering."""
+    content = "".join(f"{k}={v}" for k, v in sorted(cm_data.items()))
+    return hashlib.sha256(content.encode()).hexdigest()[:8]
 
 
 def _build_config_volume(configmap_name: str) -> Volume:
@@ -137,21 +145,24 @@ def _reconcile_gateway_configmap(
 def build_gateway_patch(
     configmap_name: str,
     input_cidrs: list[str],
+    config_hash: str,
 ) -> dict[str, Any]:
     """Build strategic merge patch for gateway StatefulSet.
 
     Adds pod-gateway init container and sidecar to the VPN gateway StatefulSet.
+    Includes a config hash annotation to trigger pod restart when ConfigMap changes.
 
     Args:
         configmap_name: Name of the ConfigMap containing pod-gateway settings.
         input_cidrs: List of CIDRs to allow INPUT from (pod, service, node CIDRs).
             Pass empty list if VPN solution handles INPUT rules natively.
+        config_hash: Hash of ConfigMap data for pod restart triggering.
 
     Returns:
         Strategic merge patch dict for StatefulSet.
 
     Example:
-        patch = build_gateway_patch("gluetun-gateway-settings", [])
+        patch = build_gateway_patch("gluetun-gateway-settings", [], "abc12345")
         manager.patch(StatefulSet, "gluetun", patch, "vpn-gateway")
     """
     init_container = _build_gateway_init_container(input_cidrs)
@@ -161,11 +172,16 @@ def build_gateway_patch(
     return {
         "spec": {
             "template": {
+                "metadata": {
+                    "annotations": {
+                        _CONFIG_HASH_ANNOTATION: config_hash,
+                    }
+                },
                 "spec": {
                     "initContainers": [init_container.to_dict()],
                     "containers": [sidecar.to_dict()],
                     "volumes": [config_volume.to_dict()],
-                }
+                },
             }
         }
     }
@@ -207,7 +223,8 @@ def reconcile_gateway(
 
     Ensures the VPN gateway StatefulSet has the required pod-gateway containers
     for VXLAN tunnel and DHCP/DNS services. Creates/updates a ConfigMap with
-    pod-gateway settings and patches the StatefulSet.
+    pod-gateway settings and patches the StatefulSet with a config hash annotation
+    to trigger pod restart when settings change.
 
     Args:
         manager: K8sResourceManager instance.
@@ -225,20 +242,17 @@ def reconcile_gateway(
         ApiError: If the StatefulSet doesn't exist or patch fails.
     """
     configmap_name = f"{statefulset_name}-gateway-settings"
+    cm_data = _build_gateway_configmap_data(data)
+    config_hash = _compute_config_hash(cm_data)
 
     _reconcile_gateway_configmap(manager, configmap_name, namespace, data)
 
-    sts = manager.get(StatefulSet, statefulset_name, namespace)
-    already_patched = is_gateway_patched(sts)
-
-    patch = build_gateway_patch(configmap_name, input_cidrs)
+    patch = build_gateway_patch(configmap_name, input_cidrs, config_hash)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
 
-    if already_patched:
-        return ReconcileResult(changed=True, message="Updated pod-gateway containers")
     return ReconcileResult(
         changed=True,
-        message=f"Added pod-gateway containers to {statefulset_name}",
+        message=f"Reconciled pod-gateway on {statefulset_name}",
     )
 
 

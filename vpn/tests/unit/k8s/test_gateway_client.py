@@ -3,9 +3,6 @@
 
 """Unit tests for gateway client StatefulSet patching."""
 
-from unittest.mock import MagicMock
-
-from lightkube import ApiError
 from lightkube.models.core_v1 import Container
 
 from charmarr_lib.vpn import (
@@ -80,7 +77,7 @@ def test_build_gateway_client_configmap_data_creates_settings():
 
 def test_build_gateway_client_patch_creates_init_container(provider_data):
     """Patch includes vpn-route-init container with correct config."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config")
+    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
 
     init_containers = patch["spec"]["template"]["spec"]["initContainers"]
     assert len(init_containers) == 1
@@ -91,7 +88,7 @@ def test_build_gateway_client_patch_creates_init_container(provider_data):
 
 def test_build_gateway_client_patch_creates_sidecar_container(provider_data):
     """Patch includes vpn-route-sidecar container with correct config."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config")
+    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
 
     containers = patch["spec"]["template"]["spec"]["containers"]
     assert len(containers) == 1
@@ -102,7 +99,7 @@ def test_build_gateway_client_patch_creates_sidecar_container(provider_data):
 
 def test_build_gateway_client_patch_includes_gateway_env(provider_data):
     """Containers have gateway env var pointing to gateway DNS name."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config")
+    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
 
     init_env = {
         e["name"]: e["value"]
@@ -118,7 +115,7 @@ def test_build_gateway_client_patch_includes_gateway_env(provider_data):
 
 def test_build_gateway_client_patch_includes_configmap_volume(provider_data):
     """Patch includes ConfigMap volume for settings."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config")
+    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
 
     volumes = patch["spec"]["template"]["spec"]["volumes"]
     assert len(volumes) == 1
@@ -127,7 +124,7 @@ def test_build_gateway_client_patch_includes_configmap_volume(provider_data):
 
 def test_build_gateway_client_patch_mounts_config_volume(provider_data):
     """Containers mount the ConfigMap volume at /config."""
-    patch = build_gateway_client_patch(provider_data, "vpn-config")
+    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
 
     init_mounts = patch["spec"]["template"]["spec"]["initContainers"][0]["volumeMounts"]
     sidecar_mounts = patch["spec"]["template"]["spec"]["containers"][0]["volumeMounts"]
@@ -139,15 +136,20 @@ def test_build_gateway_client_patch_mounts_config_volume(provider_data):
     assert sidecar_mounts[0]["mountPath"] == "/config"
 
 
+def test_build_gateway_client_patch_includes_config_hash_annotation(provider_data):
+    """Patch includes config hash annotation in pod template metadata."""
+    patch = build_gateway_client_patch(provider_data, "vpn-config", "abc12345")
+
+    annotations = patch["spec"]["template"]["metadata"]["annotations"]
+    assert "charmarr.io/gateway-client-config-hash" in annotations
+    assert annotations["charmarr.io/gateway-client-config-hash"] == "abc12345"
+
+
 # reconcile_gateway_client
 
 
-def test_reconcile_gateway_client_patches_when_not_patched(
-    manager, mock_client, provider_data, make_statefulset
-):
-    """Patches StatefulSet when gateway client containers not present."""
-    mock_client.get.return_value = make_statefulset(name="qbittorrent", namespace="downloads")
-
+def test_reconcile_gateway_client_patches_statefulset(manager, mock_client, provider_data):
+    """Patches StatefulSet with gateway client containers."""
     result = reconcile_gateway_client(
         manager,
         statefulset_name="qbittorrent",
@@ -160,34 +162,8 @@ def test_reconcile_gateway_client_patches_when_not_patched(
     mock_client.patch.assert_called_once()
 
 
-def test_reconcile_gateway_client_skips_when_already_patched(
-    manager, mock_client, provider_data, make_statefulset
-):
-    """Skips patching when gateway client containers already present."""
-    init = Container(name=CLIENT_INIT_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    sidecar = Container(name=CLIENT_SIDECAR_CONTAINER_NAME, image=POD_GATEWAY_IMAGE)
-    mock_client.get.return_value = make_statefulset(
-        name="qbittorrent", namespace="downloads", init_containers=[init], containers=[sidecar]
-    )
-
-    result = reconcile_gateway_client(
-        manager,
-        statefulset_name="qbittorrent",
-        namespace="downloads",
-        data=provider_data,
-        configmap_name="vpn-config",
-    )
-
-    assert result.changed is False
-    mock_client.patch.assert_not_called()
-
-
-def test_reconcile_gateway_client_returns_message(
-    manager, mock_client, provider_data, make_statefulset
-):
+def test_reconcile_gateway_client_returns_message(manager, mock_client, provider_data):
     """Returns descriptive message on success."""
-    mock_client.get.return_value = make_statefulset(name="qbittorrent", namespace="downloads")
-
     result = reconcile_gateway_client(
         manager,
         statefulset_name="qbittorrent",
@@ -202,12 +178,8 @@ def test_reconcile_gateway_client_returns_message(
 # reconcile_gateway_client_configmap
 
 
-def test_reconcile_gateway_client_configmap_creates_when_not_exists(manager, mock_client):
-    """Creates ConfigMap when it doesn't exist."""
-    not_found = ApiError(response=MagicMock(status_code=404, json=lambda: {}))
-    not_found.status = MagicMock(code=404)
-    mock_client.get.side_effect = not_found
-
+def test_reconcile_gateway_client_configmap_applies(manager, mock_client):
+    """Applies ConfigMap via server-side apply."""
     result = reconcile_gateway_client_configmap(
         manager,
         configmap_name="vpn-settings",
@@ -219,24 +191,5 @@ def test_reconcile_gateway_client_configmap_creates_when_not_exists(manager, moc
     )
 
     assert result.changed is True
-    assert "Created" in result.message
-    mock_client.apply.assert_called_once()
-
-
-def test_reconcile_gateway_client_configmap_updates_when_exists(manager, mock_client):
-    """Updates ConfigMap when it already exists."""
-    mock_client.get.return_value = True  # exists returns True
-
-    result = reconcile_gateway_client_configmap(
-        manager,
-        configmap_name="vpn-settings",
-        namespace="downloads",
-        dns_server_ip="10.152.183.10",
-        cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
-        vxlan_id=50,
-        vxlan_ip_network="172.16.0",
-    )
-
-    assert result.changed is True
-    assert "Updated" in result.message
+    assert "Reconciled" in result.message
     mock_client.apply.assert_called_once()

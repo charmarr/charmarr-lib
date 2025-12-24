@@ -84,27 +84,13 @@ def test_build_policy_egress_dns(config):
     assert ports == {("UDP", 53), ("TCP", 53)}
 
 
-def test_reconcile_creates_policy(manager, mock_client, config):
-    """Creates policy when it doesn't exist."""
-    mock_client.get.side_effect = ApiError(
-        response=Response(404, json={"code": 404, "message": "not found"})
-    )
-
+def test_reconcile_applies_policy(manager, mock_client, config):
+    """Applies policy via server-side apply."""
     result = reconcile_kill_switch(manager, "qbittorrent", "downloads", config)
 
     assert result.changed is True
-    assert "Created" in result.message
+    assert "Reconciled" in result.message
     mock_client.apply.assert_called_once()
-
-
-def test_reconcile_updates_policy(manager, mock_client, config):
-    """Updates policy when it exists."""
-    mock_client.get.return_value = MagicMock()
-
-    result = reconcile_kill_switch(manager, "qbittorrent", "downloads", config)
-
-    assert result.changed is True
-    assert "Updated" in result.message
 
 
 def test_reconcile_deletes_policy_when_config_none(manager, mock_client):
