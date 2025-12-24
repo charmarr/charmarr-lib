@@ -4,10 +4,10 @@
 """Base API client for *arr applications."""
 
 import logging
-from typing import Any, TypeVar
+from typing import Any, Self
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -17,7 +17,10 @@ from tenacity import (
 
 logger = logging.getLogger(__name__)
 
-ModelT = TypeVar("ModelT", bound=BaseModel)
+# Response models use extra="allow" to accept unknown fields from the API.
+# This ensures forward compatibility when *arr APIs add new fields, while
+# still providing type safety for the fields we actually use.
+RESPONSE_MODEL_CONFIG = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class ArrApiError(Exception):
@@ -34,11 +37,6 @@ class ArrApiConnectionError(ArrApiError):
 
 class ArrApiResponseError(ArrApiError):
     """Raised when the API returns an error response."""
-
-
-def _is_retryable_exception(exc: BaseException) -> bool:
-    """Check if exception is retryable (connection or timeout errors)."""
-    return isinstance(exc, httpx.ConnectError | httpx.TimeoutException)
 
 
 class BaseArrApiClient:
@@ -90,7 +88,7 @@ class BaseArrApiClient:
             self._client.close()
             self._client = None
 
-    def __enter__(self) -> "BaseArrApiClient":
+    def __enter__(self) -> Self:
         """Context manager entry."""
         return self
 
@@ -214,7 +212,7 @@ class BaseArrApiClient:
         """
         self._request("DELETE", endpoint)
 
-    def _get_validated(
+    def _get_validated[ModelT: BaseModel](
         self,
         endpoint: str,
         response_model: type[ModelT],
@@ -234,7 +232,7 @@ class BaseArrApiClient:
         data = self._get(endpoint, params=params)
         return response_model.model_validate(data)
 
-    def _get_validated_list(
+    def _get_validated_list[ModelT: BaseModel](
         self,
         endpoint: str,
         item_model: type[ModelT],
@@ -254,7 +252,7 @@ class BaseArrApiClient:
         data = self._get(endpoint, params=params)
         return [item_model.model_validate(item) for item in data]
 
-    def _post_validated(
+    def _post_validated[ModelT: BaseModel](
         self,
         endpoint: str,
         json: dict[str, Any],
@@ -273,7 +271,7 @@ class BaseArrApiClient:
         data = self._post(endpoint, json)
         return response_model.model_validate(data)
 
-    def _put_validated(
+    def _put_validated[ModelT: BaseModel](
         self,
         endpoint: str,
         json: dict[str, Any],

@@ -5,21 +5,15 @@
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
-from charmarr_lib.core._arr._base_client import BaseArrApiClient
-
-# Response models use extra="allow" to accept unknown fields from the API.
-# This ensures forward compatibility when *arr APIs add new fields, while
-# still providing type safety for the fields we actually use.
-# populate_by_name allows using both the alias (camelCase) and field name (snake_case).
-_RESPONSE_MODEL_CONFIG = ConfigDict(extra="allow", populate_by_name=True)
+from charmarr_lib.core._arr._base_client import RESPONSE_MODEL_CONFIG, BaseArrApiClient
 
 
 class DownloadClientResponse(BaseModel):
     """Download client response from *arr API."""
 
-    model_config = _RESPONSE_MODEL_CONFIG
+    model_config = RESPONSE_MODEL_CONFIG
 
     id: int
     name: str
@@ -31,7 +25,7 @@ class DownloadClientResponse(BaseModel):
 class RootFolderResponse(BaseModel):
     """Root folder response from *arr API."""
 
-    model_config = _RESPONSE_MODEL_CONFIG
+    model_config = RESPONSE_MODEL_CONFIG
 
     id: int
     path: str
@@ -41,7 +35,7 @@ class RootFolderResponse(BaseModel):
 class QualityProfileResponse(BaseModel):
     """Quality profile response from *arr API."""
 
-    model_config = _RESPONSE_MODEL_CONFIG
+    model_config = RESPONSE_MODEL_CONFIG
 
     id: int
     name: str
@@ -50,7 +44,7 @@ class QualityProfileResponse(BaseModel):
 class HostConfigResponse(BaseModel):
     """Host configuration response from *arr API."""
 
-    model_config = _RESPONSE_MODEL_CONFIG
+    model_config = RESPONSE_MODEL_CONFIG
 
     id: int
     bind_address: str = Field(alias="bindAddress")

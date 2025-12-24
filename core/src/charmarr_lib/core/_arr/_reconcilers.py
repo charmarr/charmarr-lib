@@ -30,19 +30,18 @@ def _extract_field_value(fields: list[dict[str, Any]], field_name: str) -> Any:
     return None
 
 
-def _needs_download_client_update(
+def _needs_config_update(
     existing: dict[str, Any],
     desired: dict[str, Any],
+    top_level_keys: list[str],
 ) -> bool:
-    """Check if download client needs to be updated."""
-    top_level_keys = ["enable", "protocol", "implementation", "configContract"]
+    """Check if *arr config needs to be updated by comparing top-level keys and fields."""
     for key in top_level_keys:
         if existing.get(key) != desired.get(key):
             return True
 
     existing_fields = existing.get("fields", [])
     desired_fields = desired.get("fields", [])
-
     desired_field_values = {f["name"]: f.get("value") for f in desired_fields}
 
     for field_name, desired_value in desired_field_values.items():
@@ -53,27 +52,8 @@ def _needs_download_client_update(
     return False
 
 
-def _needs_application_update(
-    existing: dict[str, Any],
-    desired: dict[str, Any],
-) -> bool:
-    """Check if Prowlarr application connection needs to be updated."""
-    top_level_keys = ["syncLevel", "implementation", "configContract"]
-    for key in top_level_keys:
-        if existing.get(key) != desired.get(key):
-            return True
-
-    existing_fields = existing.get("fields", [])
-    desired_fields = desired.get("fields", [])
-
-    desired_field_values = {f["name"]: f.get("value") for f in desired_fields}
-
-    for field_name, desired_value in desired_field_values.items():
-        existing_value = _extract_field_value(existing_fields, field_name)
-        if existing_value != desired_value:
-            return True
-
-    return False
+_DOWNLOAD_CLIENT_KEYS = ["enable", "protocol", "implementation", "configContract"]
+_APPLICATION_KEYS = ["syncLevel", "implementation", "configContract"]
 
 
 def reconcile_download_clients(
@@ -118,7 +98,7 @@ def reconcile_download_clients(
         existing = current_by_name.get(name)
         if existing:
             existing_full = api_client.get_download_client(existing.id)
-            if _needs_download_client_update(existing_full, desired_config):
+            if _needs_config_update(existing_full, desired_config, _DOWNLOAD_CLIENT_KEYS):
                 logger.info("Updating download client: %s", name)
                 api_client.update_download_client(existing.id, desired_config)
         else:
@@ -165,7 +145,7 @@ def reconcile_media_manager_connections(
         existing = current_by_name.get(name)
         if existing:
             existing_full = api_client.get_application(existing.id)
-            if _needs_application_update(existing_full, desired_config):
+            if _needs_config_update(existing_full, desired_config, _APPLICATION_KEYS):
                 logger.info("Updating media manager connection: %s", name)
                 api_client.update_application(existing.id, desired_config)
         else:
