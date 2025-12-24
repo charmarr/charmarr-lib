@@ -30,7 +30,6 @@ class TFManager:
     def _run(
         self, cmd: list[str], env: dict[str, str] | None = None
     ) -> subprocess.CompletedProcess[str]:
-        """Run a terraform command."""
         full_cmd = [self._binary, *cmd]
         result = subprocess.run(
             full_cmd,

@@ -11,6 +11,9 @@ import jubilant
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+MULTIMETER_CHARM = "charmarr-multimeter-k8s"
+MULTIMETER_CHANNEL = "latest/edge"
+
 
 def wait_for_active_idle(
     jujus: "jubilant.Juju | Sequence[jubilant.Juju]",
@@ -28,8 +31,9 @@ def wait_for_active_idle(
         jujus = [jujus]
 
     for juju in jujus:
-        juju.wait(jubilant.all_active, delay=5, successes=3, timeout=timeout)
-        juju.wait(jubilant.all_active, delay=5, timeout=60 * 5, error=jubilant.any_error)
+        juju.wait(
+            jubilant.all_active, delay=5, successes=3, timeout=timeout, error=jubilant.any_error
+        )
         juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 5, error=jubilant.any_error)
 
 
@@ -64,10 +68,6 @@ def get_app_relation_data(
                 return json.loads(app_data[key])
 
     return None
-
-
-MULTIMETER_CHARM = "charmarr-multimeter-k8s"
-MULTIMETER_CHANNEL = "latest/edge"
 
 
 def deploy_multimeter(
