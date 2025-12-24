@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.4.0...charmarr-lib-vpn-v0.5.0) (2025-12-24)
+
+
+### Features
+
+* **vpn:** export ztunnels link local addr for optional cidr whitelisting ([34399f5](https://github.com/charmarr/charmarr-lib/commit/34399f54f374f41fe7e5011607bd444a52157891))
+
+
+### Bug Fixes
+
+* **vpn:** code refactor and cleanup ([e2d58e1](https://github.com/charmarr/charmarr-lib/commit/e2d58e16097cb57f72872f57bbf072d91407a202))
+
 ## [0.4.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.3.0...charmarr-lib-vpn-v0.4.0) (2025-12-24)
 
 
