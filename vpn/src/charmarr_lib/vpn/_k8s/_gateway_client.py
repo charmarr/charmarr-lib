@@ -83,13 +83,14 @@ def build_gateway_client_configmap_data(
 
     Args:
         dns_server_ip: Kubernetes DNS server IP (e.g., "10.152.183.10").
-        cluster_cidrs: Space-separated cluster CIDRs for bypass.
-                       Note: Must be SPACE-separated for client, not comma!
+        cluster_cidrs: Cluster CIDRs for bypass (comma or space-separated).
+                       Will be normalized to space-separated for pod-gateway.
 
     Returns:
         Dict with settings.sh content for ConfigMap data field.
     """
-    settings = f'K8S_DNS_IPS="{dns_server_ip}"\nNOT_ROUTED_TO_GATEWAY_CIDRS="{cluster_cidrs}"'
+    cidrs_normalized = " ".join(c.strip() for c in cluster_cidrs.replace(",", " ").split())
+    settings = f'K8S_DNS_IPS="{dns_server_ip}"\nNOT_ROUTED_TO_GATEWAY_CIDRS="{cidrs_normalized}"'
     return {"settings.sh": settings}
 
 
