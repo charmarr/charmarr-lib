@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.4...charmarr-lib-testing-v0.3.0) (2025-12-25)
+
+
+### Features
+
+* **testing:** adds a oci image fetcher utility ([2ad5a1d](https://github.com/charmarr/charmarr-lib/commit/2ad5a1d196f7a8f8e0cdfc7dd2fdf9b347d93b98))
+
+
+### Bug Fixes
+
+* **testing:** juju wait tolerates transient errors ([18d6798](https://github.com/charmarr/charmarr-lib/commit/18d6798078fa8761a12100b347892ef02a97ef97))
+
 ## [0.2.4](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.3...charmarr-lib-testing-v0.2.4) (2025-12-24)
 
 
