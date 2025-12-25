@@ -3,6 +3,7 @@
 
 """Testing utilities for Charmarr charms."""
 
+from charmarr_lib.testing._charmcraft import get_oci_resources
 from charmarr_lib.testing._juju import (
     deploy_multimeter,
     get_app_relation_data,
@@ -14,5 +15,6 @@ __all__ = [
     "TFManager",
     "deploy_multimeter",
     "get_app_relation_data",
+    "get_oci_resources",
     "wait_for_active_idle",
 ]
