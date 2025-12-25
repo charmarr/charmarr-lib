@@ -19,9 +19,10 @@ def wait_for_active_idle(
     jujus: "jubilant.Juju | Sequence[jubilant.Juju]",
     timeout: int = 60 * 20,
 ) -> None:
-    """Wait for Juju models to be active and idle without errors.
+    """Wait for Juju models to be active and idle.
 
-    Uses jubilant's built-in wait conditions with error checking.
+    Tolerates transient errors during reconciliation - if there's a real
+    error, the wait will timeout.
 
     Args:
         jujus: Single Juju instance or list of instances to wait for.
@@ -31,10 +32,8 @@ def wait_for_active_idle(
         jujus = [jujus]
 
     for juju in jujus:
-        juju.wait(
-            jubilant.all_active, delay=5, successes=3, timeout=timeout, error=jubilant.any_error
-        )
-        juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 5, error=jubilant.any_error)
+        juju.wait(jubilant.all_active, delay=5, successes=3, timeout=timeout)
+        juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 5)
 
 
 def get_app_relation_data(
