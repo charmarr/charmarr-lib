@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.4.0...charmarr-lib-core-v0.4.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* **core:** remove orphaned security ctx whens torage relation is removed ([d4e4735](https://github.com/charmarr/charmarr-lib/commit/d4e473548afff6364942d984ad3f5eb4d128a8a9))
+
 ## [0.4.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.3.2...charmarr-lib-core-v0.4.0) (2025-12-26)
 
 
