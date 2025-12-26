@@ -30,6 +30,7 @@ from charmarr_lib.core._k8s import (
     is_storage_mounted,
     reconcile_storage_volume,
 )
+from charmarr_lib.core._pebble import ensure_pebble_user
 from charmarr_lib.core._reconciler import (
     all_events,
     observe_events,
@@ -74,6 +75,7 @@ __all__ = [
     "RootFolderResponse",
     "SecretGetter",
     "all_events",
+    "ensure_pebble_user",
     "is_storage_mounted",
     "observe_events",
     "reconcilable_events_k8s",
