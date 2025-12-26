@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.4.2...charmarr-lib-core-v0.5.0) (2025-12-26)
+
+
+### Features
+
+* **core:** adds user reconciling for linusserverio images ([e86f7ea](https://github.com/charmarr/charmarr-lib/commit/e86f7eab38fca913039c64e533da46a0b2e7513a))
+
 ## [0.4.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.4.1...charmarr-lib-core-v0.4.2) (2025-12-26)
 
 
