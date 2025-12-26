@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.5.0...charmarr-lib-core-v0.6.0) (2025-12-26)
+
+
+### Features
+
+* **core:** adds a shared secret roation handler ([e3e2270](https://github.com/charmarr/charmarr-lib/commit/e3e2270d1127def8d6e48bc077284aac2784b69d))
+
 ## [0.5.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.4.2...charmarr-lib-core-v0.5.0) (2025-12-26)
 
 
