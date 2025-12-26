@@ -10,7 +10,7 @@ storage PVC created by the charmarr-storage charm.
 Key concepts:
 - Volume: A pod-level definition that references a PVC
 - VolumeMount: A container-level mount point for a volume
-- SecurityContext: Pod-level security settings (runAsUser, fsGroup)
+- SecurityContext: Pod-level fsGroup for volume permissions
 
 Critical gotcha:
     The container_name parameter MUST match the container name in
@@ -30,7 +30,6 @@ Critical gotcha:
             container_name="radarr",  # MUST match charmcraft.yaml, not app.name!
             pvc_name=storage_data.pvc_name,
             mount_path=storage_data.mount_path,
-            puid=storage_data.puid,
             pgid=storage_data.pgid,
         )
 
@@ -96,7 +95,6 @@ def _build_storage_patch(
     pvc_name: str,
     mount_path: str,
     volume_name: str,
-    puid: int | None = None,
     pgid: int | None = None,
 ) -> dict:
     """Build a strategic merge patch for adding storage volume.
@@ -104,7 +102,7 @@ def _build_storage_patch(
     The patch adds:
     1. A volume referencing the PVC
     2. A volumeMount in the specified container
-    3. Optionally, a securityContext with runAsUser/runAsGroup/fsGroup
+    3. Optionally, a securityContext with fsGroup for volume permissions
 
     Strategic merge patch merges arrays by the 'name' field,
     so existing volumes and containers are preserved.
@@ -121,12 +119,8 @@ def _build_storage_patch(
         "containers": [container.to_dict()],
     }
 
-    if puid is not None and pgid is not None:
-        security_context = PodSecurityContext(
-            runAsUser=puid,
-            runAsGroup=pgid,
-            fsGroup=pgid,
-        )
+    if pgid is not None:
+        security_context = PodSecurityContext(fsGroup=pgid)
         pod_spec["securityContext"] = security_context.to_dict()
 
     return {
@@ -191,7 +185,6 @@ def reconcile_storage_volume(
     pvc_name: str | None,
     mount_path: str = _DEFAULT_MOUNT_PATH,
     volume_name: str = _DEFAULT_VOLUME_NAME,
-    puid: int | None = None,
     pgid: int | None = None,
 ) -> ReconcileResult:
     """Reconcile shared storage PVC volume and mount on a StatefulSet.
@@ -202,9 +195,8 @@ def reconcile_storage_volume(
     If pvc_name is None, the volume is removed. If pvc_name is provided,
     the volume is mounted.
 
-    When puid and pgid are provided, the pod's SecurityContext is set with
-    runAsUser, runAsGroup, and fsGroup. This ensures the process runs with
-    the correct UID/GID to access files on the shared storage.
+    When pgid is provided, the pod's SecurityContext is set with fsGroup.
+    This ensures files on the shared storage have the correct group ownership.
 
     Args:
         manager: K8sResourceManager instance.
@@ -214,8 +206,7 @@ def reconcile_storage_volume(
         pvc_name: Name of the PVC to mount, or None to unmount.
         mount_path: Path where the volume should be mounted.
         volume_name: Name for the volume definition.
-        puid: User ID for runAsUser and file ownership (from storage relation).
-        pgid: Group ID for runAsGroup/fsGroup and file ownership.
+        pgid: Group ID for fsGroup (from storage relation).
 
     Returns:
         ReconcileResult indicating if changes were made.
@@ -224,7 +215,6 @@ def reconcile_storage_volume(
         ApiError: If the StatefulSet doesn't exist or patch fails.
 
     Example:
-        # Mount storage with SecurityContext
         result = reconcile_storage_volume(
             manager,
             statefulset_name=self.app.name,
@@ -232,11 +222,9 @@ def reconcile_storage_volume(
             container_name="radarr",
             pvc_name=storage_data.pvc_name if storage_data else None,
             mount_path=storage_data.mount_path,
-            puid=storage_data.puid,
             pgid=storage_data.pgid,
         )
     """
-    # Removal requires JSON patch with path checks (paths must exist)
     if pvc_name is None:
         sts = manager.get(StatefulSet, statefulset_name, namespace)
         if not is_storage_mounted(sts, container_name, volume_name):
@@ -246,7 +234,6 @@ def reconcile_storage_volume(
             manager.patch(StatefulSet, statefulset_name, patch_ops, namespace, PatchType.JSON)
         return ReconcileResult(changed=True, message=f"Removed volume {volume_name}")
 
-    # If not removing, just idempotently apply the patch
-    patch = _build_storage_patch(container_name, pvc_name, mount_path, volume_name, puid, pgid)
+    patch = _build_storage_patch(container_name, pvc_name, mount_path, volume_name, pgid)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
     return ReconcileResult(changed=True, message=f"Storage configured at {mount_path}")

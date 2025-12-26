@@ -141,8 +141,8 @@ def test_reconcile_uses_custom_volume_name(manager, mock_client, make_statefulse
     assert patch["spec"]["template"]["spec"]["volumes"][0]["name"] == "custom-volume"
 
 
-def test_reconcile_patch_includes_security_context(manager, mock_client, make_statefulset):
-    """Patch includes SecurityContext when puid/pgid provided."""
+def test_reconcile_patch_includes_fsgroup(manager, mock_client, make_statefulset):
+    """Patch includes fsGroup in SecurityContext when pgid provided."""
     mock_client.get.return_value = make_statefulset()
 
     reconcile_storage_volume(
@@ -151,22 +151,19 @@ def test_reconcile_patch_includes_security_context(manager, mock_client, make_st
         namespace="media",
         container_name="radarr",
         pvc_name="charmarr-media",
-        puid=1000,
         pgid=1000,
     )
 
     patch = mock_client.patch.call_args[0][2]
     security_context = patch["spec"]["template"]["spec"]["securityContext"]
 
-    assert security_context["runAsUser"] == 1000
-    assert security_context["runAsGroup"] == 1000
     assert security_context["fsGroup"] == 1000
+    assert "runAsUser" not in security_context
+    assert "runAsGroup" not in security_context
 
 
-def test_reconcile_patch_no_security_context_without_puid_pgid(
-    manager, mock_client, make_statefulset
-):
-    """Patch excludes SecurityContext when puid/pgid not provided."""
+def test_reconcile_patch_no_security_context_without_pgid(manager, mock_client, make_statefulset):
+    """Patch excludes SecurityContext when pgid not provided."""
     mock_client.get.return_value = make_statefulset()
 
     reconcile_storage_volume(
@@ -255,7 +252,7 @@ def test_reconcile_remove_includes_security_context(manager, mock_client, make_s
         persistentVolumeClaim=PersistentVolumeClaimVolumeSource(claimName="media-pvc"),
     )
     mount = VolumeMount(name="charmarr-shared-data", mountPath="/data")
-    security_context = PodSecurityContext(runAsUser=1000, runAsGroup=1000, fsGroup=1000)
+    security_context = PodSecurityContext(fsGroup=1000)
     mock_client.get.return_value = make_statefulset(
         volumes=[volume], container_mounts=[mount], security_context=security_context
     )
