@@ -37,6 +37,7 @@ from charmarr_lib.core._reconciler import (
     reconcilable_events_k8s,
     reconcilable_events_k8s_workloadless,
 )
+from charmarr_lib.core._secrets import get_secret_rotation_policy
 from charmarr_lib.core.constants import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
     MEDIA_TYPE_DOWNLOAD_PATHS,
@@ -76,6 +77,7 @@ __all__ = [
     "SecretGetter",
     "all_events",
     "ensure_pebble_user",
+    "get_secret_rotation_policy",
     "is_storage_mounted",
     "observe_events",
     "reconcilable_events_k8s",
