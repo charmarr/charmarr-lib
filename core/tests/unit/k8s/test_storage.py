@@ -76,8 +76,8 @@ def test_reconcile_patches_when_not_mounted(manager, mock_client, make_statefuls
     mock_client.patch.assert_called_once()
 
 
-def test_reconcile_skips_when_already_mounted(manager, mock_client, make_statefulset):
-    """Skips patching when storage already mounted."""
+def test_reconcile_patches_even_when_already_mounted(manager, mock_client, make_statefulset):
+    """Strategic merge patch is idempotent, so we always apply it."""
     volume = Volume(
         name="charmarr-shared-data",
         persistentVolumeClaim=PersistentVolumeClaimVolumeSource(claimName="charmarr-media"),
@@ -93,8 +93,8 @@ def test_reconcile_skips_when_already_mounted(manager, mock_client, make_statefu
         pvc_name="charmarr-media",
     )
 
-    assert result.changed is False
-    mock_client.patch.assert_not_called()
+    assert result.changed is True
+    mock_client.patch.assert_called_once()
 
 
 def test_reconcile_patch_contains_volume_and_mount(manager, mock_client, make_statefulset):
@@ -138,6 +138,46 @@ def test_reconcile_uses_custom_volume_name(manager, mock_client, make_statefulse
 
     patch = mock_client.patch.call_args[0][2]
     assert patch["spec"]["template"]["spec"]["volumes"][0]["name"] == "custom-volume"
+
+
+def test_reconcile_patch_includes_security_context(manager, mock_client, make_statefulset):
+    """Patch includes SecurityContext when puid/pgid provided."""
+    mock_client.get.return_value = make_statefulset()
+
+    reconcile_storage_volume(
+        manager,
+        statefulset_name="radarr",
+        namespace="media",
+        container_name="radarr",
+        pvc_name="charmarr-media",
+        puid=1000,
+        pgid=1000,
+    )
+
+    patch = mock_client.patch.call_args[0][2]
+    security_context = patch["spec"]["template"]["spec"]["securityContext"]
+
+    assert security_context["runAsUser"] == 1000
+    assert security_context["runAsGroup"] == 1000
+    assert security_context["fsGroup"] == 1000
+
+
+def test_reconcile_patch_no_security_context_without_puid_pgid(
+    manager, mock_client, make_statefulset
+):
+    """Patch excludes SecurityContext when puid/pgid not provided."""
+    mock_client.get.return_value = make_statefulset()
+
+    reconcile_storage_volume(
+        manager,
+        statefulset_name="radarr",
+        namespace="media",
+        container_name="radarr",
+        pvc_name="charmarr-media",
+    )
+
+    patch = mock_client.patch.call_args[0][2]
+    assert "securityContext" not in patch["spec"]["template"]["spec"]
 
 
 # reconcile_storage_volume - removal (pvc_name=None)

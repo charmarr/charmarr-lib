@@ -10,6 +10,7 @@ storage PVC created by the charmarr-storage charm.
 Key concepts:
 - Volume: A pod-level definition that references a PVC
 - VolumeMount: A container-level mount point for a volume
+- SecurityContext: Pod-level security settings (runAsUser, fsGroup)
 
 Critical gotcha:
     The container_name parameter MUST match the container name in
@@ -29,6 +30,8 @@ Critical gotcha:
             container_name="radarr",  # MUST match charmcraft.yaml, not app.name!
             pvc_name=storage_data.pvc_name,
             mount_path=storage_data.mount_path,
+            puid=storage_data.puid,
+            pgid=storage_data.pgid,
         )
 
 See ADR: storage/adr-003-pvc-patching-in-arr-charms.md
@@ -37,6 +40,7 @@ See ADR: storage/adr-003-pvc-patching-in-arr-charms.md
 from lightkube.models.core_v1 import (
     Container,
     PersistentVolumeClaimVolumeSource,
+    PodSecurityContext,
     Volume,
     VolumeMount,
 )
@@ -92,12 +96,15 @@ def _build_storage_patch(
     pvc_name: str,
     mount_path: str,
     volume_name: str,
+    puid: int | None = None,
+    pgid: int | None = None,
 ) -> dict:
     """Build a strategic merge patch for adding storage volume.
 
     The patch adds:
     1. A volume referencing the PVC
     2. A volumeMount in the specified container
+    3. Optionally, a securityContext with runAsUser/runAsGroup/fsGroup
 
     Strategic merge patch merges arrays by the 'name' field,
     so existing volumes and containers are preserved.
@@ -109,13 +116,23 @@ def _build_storage_patch(
     mount = VolumeMount(name=volume_name, mountPath=mount_path)
     container = Container(name=container_name, volumeMounts=[mount])
 
+    pod_spec: dict = {
+        "volumes": [volume.to_dict()],
+        "containers": [container.to_dict()],
+    }
+
+    if puid is not None and pgid is not None:
+        security_context = PodSecurityContext(
+            runAsUser=puid,
+            runAsGroup=pgid,
+            fsGroup=pgid,
+        )
+        pod_spec["securityContext"] = security_context.to_dict()
+
     return {
         "spec": {
             "template": {
-                "spec": {
-                    "volumes": [volume.to_dict()],
-                    "containers": [container.to_dict()],
-                }
+                "spec": pod_spec,
             }
         }
     }
@@ -170,14 +187,20 @@ def reconcile_storage_volume(
     pvc_name: str | None,
     mount_path: str = _DEFAULT_MOUNT_PATH,
     volume_name: str = _DEFAULT_VOLUME_NAME,
+    puid: int | None = None,
+    pgid: int | None = None,
 ) -> ReconcileResult:
     """Reconcile shared storage PVC volume and mount on a StatefulSet.
 
     This function ensures a shared PVC is mounted (or unmounted) in a
-    Juju-managed StatefulSet. It's idempotent.
+    Juju-managed StatefulSet. Uses strategic merge patch which is idempotent.
 
     If pvc_name is None, the volume is removed. If pvc_name is provided,
     the volume is mounted.
+
+    When puid and pgid are provided, the pod's SecurityContext is set with
+    runAsUser, runAsGroup, and fsGroup. This ensures the process runs with
+    the correct UID/GID to access files on the shared storage.
 
     Args:
         manager: K8sResourceManager instance.
@@ -187,6 +210,8 @@ def reconcile_storage_volume(
         pvc_name: Name of the PVC to mount, or None to unmount.
         mount_path: Path where the volume should be mounted.
         volume_name: Name for the volume definition.
+        puid: User ID for runAsUser and file ownership (from storage relation).
+        pgid: Group ID for runAsGroup/fsGroup and file ownership.
 
     Returns:
         ReconcileResult indicating if changes were made.
@@ -195,29 +220,29 @@ def reconcile_storage_volume(
         ApiError: If the StatefulSet doesn't exist or patch fails.
 
     Example:
-        # Mount storage when relation data is available
+        # Mount storage with SecurityContext
         result = reconcile_storage_volume(
             manager,
             statefulset_name=self.app.name,
             namespace=self.model.name,
             container_name="radarr",
             pvc_name=storage_data.pvc_name if storage_data else None,
+            mount_path=storage_data.mount_path,
+            puid=storage_data.puid,
+            pgid=storage_data.pgid,
         )
     """
-    sts = manager.get(StatefulSet, statefulset_name, namespace)
-    currently_mounted = is_storage_mounted(sts, container_name, volume_name)
-
+    # Removal requires JSON patch with path checks (paths must exist)
     if pvc_name is None:
-        if not currently_mounted:
+        sts = manager.get(StatefulSet, statefulset_name, namespace)
+        if not is_storage_mounted(sts, container_name, volume_name):
             return ReconcileResult(changed=False, message="Storage not mounted")
         patch_ops = _build_remove_storage_json_patch(sts, container_name, volume_name)
         if patch_ops:
             manager.patch(StatefulSet, statefulset_name, patch_ops, namespace, PatchType.JSON)
         return ReconcileResult(changed=True, message=f"Removed volume {volume_name}")
 
-    if currently_mounted:
-        return ReconcileResult(changed=False, message="Storage already mounted")
-
-    patch = _build_storage_patch(container_name, pvc_name, mount_path, volume_name)
+    # If not removing, just idempotently apply the patch
+    patch = _build_storage_patch(container_name, pvc_name, mount_path, volume_name, puid, pgid)
     manager.patch(StatefulSet, statefulset_name, patch, namespace)
-    return ReconcileResult(changed=True, message=f"Mounted {pvc_name} at {mount_path}")
+    return ReconcileResult(changed=True, message=f"Storage configured at {mount_path}")
