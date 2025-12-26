@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.4.0...charmarr-lib-testing-v0.4.1) (2025-12-26)
+
+
+### Bug Fixes
+
+* **testing:** migrates shared test utils from charm ([f67e5ee](https://github.com/charmarr/charmarr-lib/commit/f67e5eeebcd5c624c8c76658461acd38816305e0))
+
 ## [0.4.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.3.0...charmarr-lib-testing-v0.4.0) (2025-12-26)
 
 
