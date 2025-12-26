@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.4.1...charmarr-lib-core-v0.4.2) (2025-12-26)
+
+
+### Bug Fixes
+
+* **core:** minimizes security ctx patching to fsGroup to reduce invasiveness ([25e4e06](https://github.com/charmarr/charmarr-lib/commit/25e4e0636b45b7062a2782d7ef0eb4b2da344a9c))
+
 ## [0.4.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.4.0...charmarr-lib-core-v0.4.1) (2025-12-26)
 
 
