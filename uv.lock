@@ -147,9 +147,11 @@ source = { editable = "testing" }
 dependencies = [
     { name = "jubilant" },
     { name = "ops" },
+    { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-bdd" },
     { name = "pytest-jubilant" },
+    { name = "pyyaml" },
 ]
 
 [package.optional-dependencies]
@@ -164,10 +166,12 @@ requires-dist = [
     { name = "jubilant", specifier = ">=1.6" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
     { name = "ops", specifier = ">=2.0" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-bdd", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "pytest-jubilant", specifier = ">=0.1" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
 ]
 provides-extras = ["dev"]
