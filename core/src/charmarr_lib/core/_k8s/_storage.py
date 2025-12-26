@@ -143,11 +143,12 @@ def _build_remove_storage_json_patch(
     container_name: str,
     volume_name: str,
 ) -> list[dict]:
-    """Build JSON patch operations to remove a storage volume and its mount.
+    """Build JSON patch operations to remove a storage volume, mount, and securityContext.
 
     Returns a list of JSON patch operations that remove:
     1. The volume from spec.template.spec.volumes
     2. The volumeMount from the target container
+    3. The securityContext from the pod spec (if present)
     """
     if sts.spec is None or sts.spec.template.spec is None:
         return []
@@ -175,6 +176,9 @@ def _build_remove_storage_json_patch(
                     )
                     break
             break
+
+    if pod_spec.securityContext is not None:
+        operations.append({"op": "remove", "path": "/spec/template/spec/securityContext"})
 
     return operations
 

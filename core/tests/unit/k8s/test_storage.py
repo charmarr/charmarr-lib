@@ -5,6 +5,7 @@
 
 from lightkube.models.core_v1 import (
     PersistentVolumeClaimVolumeSource,
+    PodSecurityContext,
     Volume,
     VolumeMount,
 )
@@ -245,3 +246,29 @@ def test_reconcile_remove_patch_is_json_patch(manager, mock_client, make_statefu
     assert isinstance(patch_ops, list)
     assert len(patch_ops) == 2
     assert all(op["op"] == "remove" for op in patch_ops)
+
+
+def test_reconcile_remove_includes_security_context(manager, mock_client, make_statefulset):
+    """Removal also removes securityContext when present."""
+    volume = Volume(
+        name="charmarr-shared-data",
+        persistentVolumeClaim=PersistentVolumeClaimVolumeSource(claimName="media-pvc"),
+    )
+    mount = VolumeMount(name="charmarr-shared-data", mountPath="/data")
+    security_context = PodSecurityContext(runAsUser=1000, runAsGroup=1000, fsGroup=1000)
+    mock_client.get.return_value = make_statefulset(
+        volumes=[volume], container_mounts=[mount], security_context=security_context
+    )
+
+    reconcile_storage_volume(
+        manager,
+        statefulset_name="radarr",
+        namespace="media",
+        container_name="radarr",
+        pvc_name=None,
+    )
+
+    patch_ops = mock_client.patch.call_args[0][2]
+    assert len(patch_ops) == 3
+    paths = [op["path"] for op in patch_ops]
+    assert "/spec/template/spec/securityContext" in paths
