@@ -20,10 +20,19 @@ class ContainerInfo(BaseModel):
     init_containers: list[str]
 
 
-def _run_multimeter_action(
+def run_multimeter_action(
     juju: jubilant.Juju, action: str, params: dict[str, Any] | None = None
 ) -> dict[str, str]:
-    """Run an action on multimeter and return results."""
+    """Run an action on charmarr-multimeter and return results.
+
+    Args:
+        juju: Juju instance.
+        action: Action name to run.
+        params: Optional action parameters.
+
+    Returns:
+        Dict of action results. Empty dict on failure.
+    """
     try:
         result = juju.run("charmarr-multimeter/0", action, params or {})
         return dict(result.results)
@@ -34,7 +43,7 @@ def _run_multimeter_action(
 
 def get_container_info(juju: jubilant.Juju, namespace: str, name: str) -> ContainerInfo:
     """Get container names from a StatefulSet via multimeter action."""
-    results = _run_multimeter_action(
+    results = run_multimeter_action(
         juju, "get-statefulset-containers", {"namespace": namespace, "name": name}
     )
     containers_str = results.get("containers", "")

@@ -4,12 +4,18 @@
 """Jubilant integration helpers for Juju testing."""
 
 import json
+import logging
+import os
+import re
+import subprocess
 from typing import TYPE_CHECKING, Any
 
 import jubilant
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+logger = logging.getLogger(__name__)
 
 MULTIMETER_CHARM = "charmarr-multimeter-k8s"
 MULTIMETER_CHANNEL = "latest/edge"
@@ -89,3 +95,72 @@ def deploy_multimeter(
         channel=channel,
         trust=trust,
     )
+
+
+def vpn_creds_available() -> bool:
+    """Check if VPN credentials are available in environment."""
+    return bool(os.environ.get("WIREGUARD_PRIVATE_KEY"))
+
+
+def create_vpn_secret(juju: jubilant.Juju, private_key: str) -> str:
+    """Create Juju secret with WireGuard private key.
+
+    Args:
+        juju: Juju instance.
+        private_key: WireGuard private key value.
+
+    Returns:
+        Secret URI (e.g., "secret:abcd1234").
+
+    Raises:
+        RuntimeError: If secret creation fails.
+    """
+    output = juju.cli("add-secret", "vpn-key", f"private-key={private_key}")
+    match = re.search(r"(secret:\S+)", output)
+    if not match:
+        raise RuntimeError(f"Failed to parse secret URI from: {output}")
+    return match.group(1)
+
+
+def grant_secret_to_app(juju: jubilant.Juju, secret_name: str, app: str) -> None:
+    """Grant a Juju secret to an application.
+
+    Args:
+        juju: Juju instance.
+        secret_name: Name of the secret to grant.
+        app: Application name to grant access to.
+    """
+    juju.cli("grant-secret", secret_name, app)
+
+
+def get_node_cidr() -> str:
+    """Get node CIDR from environment or discover from Kubernetes.
+
+    Returns a /24 CIDR covering the first node's internal IP.
+    Falls back to 10.0.0.0/8 if discovery fails.
+    """
+    if cidr := os.environ.get("NODE_CIDR"):
+        return cidr
+
+    try:
+        result = subprocess.run(
+            [
+                "kubectl",
+                "get",
+                "nodes",
+                "-o",
+                "jsonpath={.items[0].status.addresses[?(@.type=='InternalIP')].address}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        node_ip = result.stdout.strip()
+        if node_ip:
+            octets = node_ip.split(".")
+            return f"{octets[0]}.{octets[1]}.{octets[2]}.0/24"
+    except Exception:
+        pass
+
+    logger.warning("Could not discover node IP, using 10.0.0.0/8 as fallback")
+    return "10.0.0.0/8"
