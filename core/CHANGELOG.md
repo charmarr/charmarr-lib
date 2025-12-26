@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.3.2...charmarr-lib-core-v0.4.0) (2025-12-26)
+
+
+### Features
+
+* **core:** storage patching patches security ctx to replace s6 init layer ([087124a](https://github.com/charmarr/charmarr-lib/commit/087124a7a68ee908e7b31cdbc9cacc528ce50782))
+
 ## [0.3.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.3.1...charmarr-lib-core-v0.3.2) (2025-12-24)
 
 
