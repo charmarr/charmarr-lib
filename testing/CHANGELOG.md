@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.3.0...charmarr-lib-testing-v0.4.0) (2025-12-26)
+
+
+### Features
+
+* **testing:** abstracts common gherkin step definitions across charmarr ([9a95c95](https://github.com/charmarr/charmarr-lib/commit/9a95c95d45811d0f10ece873c7ef47290f1d096d))
+
 ## [0.3.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.2.4...charmarr-lib-testing-v0.3.0) (2025-12-25)
 
 
