@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.4.1...charmarr-lib-testing-v0.5.0) (2025-12-27)
+
+
+### Features
+
+* **testing:** extend shared bdd defs with download client defs ([9857c93](https://github.com/charmarr/charmarr-lib/commit/9857c93f58a54bd0309c2b703bd934bf9be6a37b))
+
 ## [0.4.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.4.0...charmarr-lib-testing-v0.4.1) (2025-12-26)
 
 
