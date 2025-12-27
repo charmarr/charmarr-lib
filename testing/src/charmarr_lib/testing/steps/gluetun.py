@@ -48,6 +48,17 @@ def deploy_gluetun(juju: jubilant.Juju) -> None:
     wait_for_active_idle(juju)
 
 
+@given(parsers.parse("{app} is related to gluetun via vpn-gateway"))
+def relate_app_to_gluetun(juju: jubilant.Juju, app: str) -> None:
+    """Integrate an app with gluetun via vpn-gateway relation."""
+    status = juju.status()
+    app_status = status.apps.get(app)
+    if app_status and "vpn-gateway" in app_status.relations:
+        return
+    juju.integrate(f"{app}:vpn-gateway", "gluetun:vpn-gateway")
+    wait_for_active_idle(juju)
+
+
 @then("the gluetun charm should be active")
 def gluetun_active(juju: jubilant.Juju) -> None:
     """Assert gluetun charm is active."""
