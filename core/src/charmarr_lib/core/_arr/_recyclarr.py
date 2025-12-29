@@ -67,6 +67,8 @@ def _run_recyclarr(charm_dir: Path, config_content: str) -> None:
         config_path.write_text(config_content)
         env = os.environ.copy()
         env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
+        charm_usr_bin = str(charm_dir / "usr" / "bin")
+        env["PATH"] = f"{charm_usr_bin}:{env.get('PATH', '')}"
         result = subprocess.run(
             [str(recyclarr_bin), "sync", "--config", str(config_path)],
             capture_output=True,
