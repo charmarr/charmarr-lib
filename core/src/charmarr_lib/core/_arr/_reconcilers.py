@@ -7,12 +7,13 @@ import logging
 from typing import Any
 
 from charmarr_lib.core._arr._arr_client import ArrApiClient
+from charmarr_lib.core._arr._base_client import BaseArrApiClient
 from charmarr_lib.core._arr._config_builders import (
     ApplicationConfigBuilder,
     DownloadClientConfigBuilder,
     SecretGetter,
 )
-from charmarr_lib.core._arr._prowlarr_client import ProwlarrApiClient
+from charmarr_lib.core._arr._protocols import MediaIndexerClient
 from charmarr_lib.core.enums import MediaManager
 from charmarr_lib.core.interfaces import (
     DownloadClientProviderData,
@@ -107,21 +108,21 @@ def reconcile_download_clients(
 
 
 def reconcile_media_manager_connections(
-    api_client: ProwlarrApiClient,
+    api_client: MediaIndexerClient,
     desired_managers: list[MediaIndexerRequirerData],
-    prowlarr_url: str,
+    indexer_url: str,
     get_secret: SecretGetter,
 ) -> None:
-    """Reconcile media manager connections in Prowlarr.
+    """Reconcile media manager connections in an indexer application.
 
     Syncs application configuration (connections to Radarr/Sonarr/Lidarr)
     to match the desired state from Juju relations. Connections not in
     desired_managers will be deleted.
 
     Args:
-        api_client: Prowlarr API client
+        api_client: API client implementing MediaIndexerClient protocol
         desired_managers: Media manager data from media-indexer relations
-        prowlarr_url: URL of the Prowlarr instance
+        indexer_url: URL of the indexer instance (e.g., Prowlarr)
         get_secret: Callback to retrieve secret content by ID
     """
     current = api_client.get_applications()
@@ -131,7 +132,7 @@ def reconcile_media_manager_connections(
     for requirer in desired_managers:
         config = ApplicationConfigBuilder.build(
             requirer=requirer,
-            prowlarr_url=prowlarr_url,
+            indexer_url=indexer_url,
             get_secret=get_secret,
         )
         desired_configs[requirer.instance_name] = config
@@ -172,13 +173,13 @@ def reconcile_root_folder(
 
 
 def reconcile_external_url(
-    api_client: ArrApiClient | ProwlarrApiClient,
+    api_client: BaseArrApiClient,
     external_url: str,
 ) -> None:
     """Configure external URL in any *arr application host config.
 
     Args:
-        api_client: API client (ArrApiClient or ProwlarrApiClient)
+        api_client: Any *arr API client (extends BaseArrApiClient)
         external_url: External URL for the application
     """
     current_full = api_client.get_host_config_raw()

@@ -27,6 +27,17 @@ _MEDIA_MANAGER_CATEGORY_FIELDS: dict[MediaManager, str] = {
     MediaManager.WHISPARR: "movieCategory",  # Uses same as Radarr
 }
 
+# Maps media manager types to Prowlarr sync category IDs (NewzNab standard).
+# These are the default categories from Prowlarr's application schema.
+# https://wiki.servarr.com/en/prowlarr/settings#categories
+_MEDIA_MANAGER_SYNC_CATEGORIES: dict[MediaManager, list[int]] = {
+    MediaManager.RADARR: [2000, 2010, 2020, 2030, 2040, 2045, 2050, 2060, 2070, 2080, 2090],
+    MediaManager.SONARR: [5000, 5010, 5020, 5030, 5040, 5045, 5050, 5060, 5070, 5080, 5090],
+    MediaManager.LIDARR: [3000, 3010, 3020, 3030, 3040, 3050, 3060],
+    MediaManager.READARR: [7000, 7010, 7020, 7030, 7040, 7050, 7060],
+    MediaManager.WHISPARR: [6000, 6010, 6020, 6030, 6040, 6045, 6050, 6060, 6070, 6080, 6090],
+}
+
 
 class DownloadClientConfigBuilder:
     """Build download client API payloads from relation data.
@@ -138,23 +149,26 @@ class DownloadClientConfigBuilder:
 
 
 class ApplicationConfigBuilder:
-    """Build Prowlarr application API payloads from relation data.
+    """Build media indexer application API payloads from relation data.
 
-    Transforms MediaIndexerRequirerData into Prowlarr application payloads
+    Transforms MediaIndexerRequirerData into application payloads
     for configuring connections to media managers (Radarr, Sonarr, etc.).
+
+    Note: Currently builds Prowlarr-compatible payloads. The field names
+    like "prowlarrUrl" are Prowlarr-specific API requirements.
     """
 
     @staticmethod
     def build(
         requirer: MediaIndexerRequirerData,
-        prowlarr_url: str,
+        indexer_url: str,
         get_secret: SecretGetter,
     ) -> dict:
-        """Transform relation data into Prowlarr application payload.
+        """Transform relation data into application payload.
 
         Args:
             requirer: Media indexer requirer relation data
-            prowlarr_url: URL of the Prowlarr instance
+            indexer_url: URL of the indexer instance
             get_secret: Callback to retrieve secret content by ID
 
         Returns:
@@ -172,16 +186,18 @@ class ApplicationConfigBuilder:
         if requirer.base_path:
             base_url = base_url + requirer.base_path
 
+        sync_categories = _MEDIA_MANAGER_SYNC_CATEGORIES.get(requirer.manager, [])
+
         return {
             "name": requirer.instance_name,
             "syncLevel": "fullSync",
             "implementation": implementation,
             "configContract": config_contract,
             "fields": [
-                {"name": "prowlarrUrl", "value": prowlarr_url},
+                {"name": "prowlarrUrl", "value": indexer_url},
                 {"name": "baseUrl", "value": base_url},
                 {"name": "apiKey", "value": api_key},
-                {"name": "syncCategories", "value": []},
+                {"name": "syncCategories", "value": sync_categories},
             ],
             "tags": [],
         }

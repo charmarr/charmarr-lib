@@ -147,24 +147,8 @@ class ArrApiClient(BaseArrApiClient):
         """Get all configured quality profiles."""
         return self._get_validated_list("/qualityprofile", QualityProfileResponse)
 
-    # Host Config
+    # Host Config (get_host_config_raw and update_host_config are in BaseArrApiClient)
 
     def get_host_config(self) -> HostConfigResponse:
-        """Get host configuration."""
+        """Get host configuration with typed response."""
         return self._get_validated("/config/host", HostConfigResponse)
-
-    def get_host_config_raw(self) -> dict[str, Any]:
-        """Get host configuration as raw dict."""
-        return self._get("/config/host")
-
-    def update_host_config(self, config: dict[str, Any]) -> HostConfigResponse:
-        """Update host configuration.
-
-        Merges provided config with current settings.
-
-        Args:
-            config: Host configuration settings to update
-        """
-        current = self._get("/config/host")
-        updated = {**current, **config}
-        return self._put_validated("/config/host", updated, HostConfigResponse)

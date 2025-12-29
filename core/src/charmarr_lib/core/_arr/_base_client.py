@@ -289,3 +289,26 @@ class BaseArrApiClient:
         """
         data = self._put(endpoint, json)
         return response_model.model_validate(data)
+
+    def get_host_config_raw(self) -> dict[str, Any]:
+        """Get host configuration as raw dict.
+
+        All *arr applications have a /config/host endpoint that returns
+        settings like bindAddress, port, urlBase, and applicationUrl.
+        """
+        return self._get("/config/host")
+
+    def update_host_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        """Update host configuration.
+
+        Merges provided config with current settings and PUTs the result.
+
+        Args:
+            config: Host configuration settings to update
+
+        Returns:
+            Updated host configuration
+        """
+        current = self._get("/config/host")
+        updated = {**current, **config}
+        return self._put("/config/host", updated)

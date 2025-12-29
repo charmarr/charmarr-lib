@@ -14,17 +14,22 @@ from charmarr_lib.core._arr._base_client import (
     ArrApiConnectionError,
     ArrApiError,
     ArrApiResponseError,
+    BaseArrApiClient,
 )
 from charmarr_lib.core._arr._config_builders import (
     ApplicationConfigBuilder,
     DownloadClientConfigBuilder,
     SecretGetter,
 )
-from charmarr_lib.core._arr._prowlarr_client import (
-    ApplicationResponse,
-    IndexerResponse,
-    ProwlarrApiClient,
-    ProwlarrHostConfigResponse,
+from charmarr_lib.core._arr._config_xml import (
+    config_has_api_key,
+    generate_api_key,
+    read_api_key,
+    update_api_key,
+)
+from charmarr_lib.core._arr._protocols import (
+    MediaIndexerClient,
+    MediaManagerConnection,
 )
 from charmarr_lib.core._arr._reconcilers import (
     reconcile_download_clients,
@@ -35,22 +40,25 @@ from charmarr_lib.core._arr._reconcilers import (
 
 __all__ = [
     "ApplicationConfigBuilder",
-    "ApplicationResponse",
     "ArrApiClient",
     "ArrApiConnectionError",
     "ArrApiError",
     "ArrApiResponseError",
+    "BaseArrApiClient",
     "DownloadClientConfigBuilder",
     "DownloadClientResponse",
     "HostConfigResponse",
-    "IndexerResponse",
-    "ProwlarrApiClient",
-    "ProwlarrHostConfigResponse",
+    "MediaIndexerClient",
+    "MediaManagerConnection",
     "QualityProfileResponse",
     "RootFolderResponse",
     "SecretGetter",
+    "config_has_api_key",
+    "generate_api_key",
+    "read_api_key",
     "reconcile_download_clients",
     "reconcile_external_url",
     "reconcile_media_manager_connections",
     "reconcile_root_folder",
+    "update_api_key",
 ]

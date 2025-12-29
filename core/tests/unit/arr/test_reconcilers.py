@@ -4,15 +4,14 @@
 """Unit tests for reconcilers."""
 
 from charmarr_lib.core import (
-    MEDIA_MANAGER_IMPLEMENTATIONS,
-    MediaManager,
+    MediaManagerConnection,
     reconcile_download_clients,
     reconcile_external_url,
     reconcile_media_manager_connections,
     reconcile_root_folder,
 )
 from charmarr_lib.core._arr._arr_client import DownloadClientResponse, RootFolderResponse
-from charmarr_lib.core._arr._prowlarr_client import ApplicationResponse
+from charmarr_lib.core.enums import MediaManager
 
 # reconcile_download_clients
 
@@ -114,10 +113,7 @@ def test_media_manager_connections_adds_new(mock_prowlarr_client, radarr_require
 
 def test_media_manager_connections_deletes_removed(mock_prowlarr_client, mock_api_key):
     """Deletes application not in desired list."""
-    impl, contract = MEDIA_MANAGER_IMPLEMENTATIONS[MediaManager.RADARR]
-    existing = ApplicationResponse(
-        id=1, name="old-app", syncLevel="fullSync", implementation=impl, configContract=contract
-    )
+    existing = MediaManagerConnection(id=1, name="old-app")
     mock_prowlarr_client.get_applications.return_value = [existing]
 
     reconcile_media_manager_connections(
@@ -131,14 +127,7 @@ def test_media_manager_connections_updates_when_changed(
     mock_prowlarr_client, radarr_requirer, mock_api_key
 ):
     """Updates application when config differs."""
-    impl, contract = MEDIA_MANAGER_IMPLEMENTATIONS[MediaManager.RADARR]
-    existing = ApplicationResponse(
-        id=1,
-        name="radarr-1080p",
-        syncLevel="fullSync",
-        implementation=impl,
-        configContract=contract,
-    )
+    existing = MediaManagerConnection(id=1, name="radarr-1080p")
     mock_prowlarr_client.get_applications.return_value = [existing]
     mock_prowlarr_client.get_application.return_value = {
         "id": 1,
