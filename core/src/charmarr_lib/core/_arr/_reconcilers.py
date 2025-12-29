@@ -96,15 +96,18 @@ def reconcile_download_clients(
             api_client.delete_download_client(current_dc.id)
 
     for name, desired_config in desired_configs.items():
-        existing = current_by_name.get(name)
-        if existing:
-            existing_full = api_client.get_download_client(existing.id)
-            if _needs_config_update(existing_full, desired_config, _DOWNLOAD_CLIENT_KEYS):
-                logger.info("Updating download client: %s", name)
-                api_client.update_download_client(existing.id, desired_config)
-        else:
-            logger.info("Adding download client: %s", name)
-            api_client.add_download_client(desired_config)
+        try:
+            existing = current_by_name.get(name)
+            if existing:
+                existing_full = api_client.get_download_client(existing.id)
+                if _needs_config_update(existing_full, desired_config, _DOWNLOAD_CLIENT_KEYS):
+                    logger.info("Updating download client: %s", name)
+                    api_client.update_download_client(existing.id, desired_config)
+            else:
+                logger.info("Adding download client: %s", name)
+                api_client.add_download_client(desired_config)
+        except Exception as e:
+            logger.warning("Failed to reconcile download client %s: %s", name, e)
 
 
 def reconcile_media_manager_connections(
@@ -143,15 +146,18 @@ def reconcile_media_manager_connections(
             api_client.delete_application(current_app.id)
 
     for name, desired_config in desired_configs.items():
-        existing = current_by_name.get(name)
-        if existing:
-            existing_full = api_client.get_application(existing.id)
-            if _needs_config_update(existing_full, desired_config, _APPLICATION_KEYS):
-                logger.info("Updating media manager connection: %s", name)
-                api_client.update_application(existing.id, desired_config)
-        else:
-            logger.info("Adding media manager connection: %s", name)
-            api_client.add_application(desired_config)
+        try:
+            existing = current_by_name.get(name)
+            if existing:
+                existing_full = api_client.get_application(existing.id)
+                if _needs_config_update(existing_full, desired_config, _APPLICATION_KEYS):
+                    logger.info("Updating media manager connection: %s", name)
+                    api_client.update_application(existing.id, desired_config)
+            else:
+                logger.info("Adding media manager connection: %s", name)
+                api_client.add_application(desired_config)
+        except Exception as e:
+            logger.warning("Failed to reconcile media manager connection %s: %s", name, e)
 
 
 def reconcile_root_folder(
