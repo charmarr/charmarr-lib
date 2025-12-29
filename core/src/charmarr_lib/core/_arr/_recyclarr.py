@@ -29,8 +29,6 @@ _RECYCLARR_CONFIG_PATH = "/tmp/recyclarr.yml"
 class RecyclarrError(Exception):
     """Raised when Recyclarr execution fails."""
 
-    pass
-
 
 def _expand_template_to_includes(manager: MediaManager, template: str) -> list[str]:
     """Expand user-friendly template name to actual Recyclarr include names.

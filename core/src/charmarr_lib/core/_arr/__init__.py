@@ -25,6 +25,7 @@ from charmarr_lib.core._arr._config_xml import (
     config_has_api_key,
     generate_api_key,
     read_api_key,
+    reconcile_config_xml,
     update_api_key,
 )
 from charmarr_lib.core._arr._protocols import (
@@ -61,6 +62,7 @@ __all__ = [
     "config_has_api_key",
     "generate_api_key",
     "read_api_key",
+    "reconcile_config_xml",
     "reconcile_download_clients",
     "reconcile_external_url",
     "reconcile_media_manager_connections",
