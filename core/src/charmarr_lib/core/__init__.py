@@ -16,6 +16,8 @@ from charmarr_lib.core._arr import (
     MediaIndexerClient,
     MediaManagerConnection,
     QualityProfileResponse,
+    RecyclarrError,
+    RecyclarrTimeoutError,
     RootFolderResponse,
     SecretGetter,
     config_has_api_key,
@@ -25,6 +27,7 @@ from charmarr_lib.core._arr import (
     reconcile_external_url,
     reconcile_media_manager_connections,
     reconcile_root_folder,
+    sync_trash_profiles,
     update_api_key,
 )
 from charmarr_lib.core._juju import (
@@ -74,6 +77,8 @@ __all__ = [
     "MediaManagerConnection",
     "QualityProfileResponse",
     "ReconcileResult",
+    "RecyclarrError",
+    "RecyclarrTimeoutError",
     "RequestManager",
     "RootFolderResponse",
     "SecretGetter",
@@ -92,5 +97,6 @@ __all__ = [
     "reconcile_media_manager_connections",
     "reconcile_root_folder",
     "reconcile_storage_volume",
+    "sync_trash_profiles",
     "update_api_key",
 ]

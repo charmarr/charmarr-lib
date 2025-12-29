@@ -76,3 +76,20 @@ def mock_api_key():
         return {"api-key": "test-api-key-123"}
 
     return _mock_api_key
+
+
+@pytest.fixture
+def charm_dir_with_recyclarr(tmp_path):
+    """Create a charm directory with a fake recyclarr binary."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    recyclarr_bin = bin_dir / "recyclarr"
+    recyclarr_bin.write_text("#!/bin/bash\nexit 0")
+    recyclarr_bin.chmod(0o755)
+    return tmp_path
+
+
+@pytest.fixture
+def charm_dir_without_recyclarr(tmp_path):
+    """Create a charm directory without recyclarr binary."""
+    return tmp_path

@@ -37,6 +37,11 @@ from charmarr_lib.core._arr._reconcilers import (
     reconcile_media_manager_connections,
     reconcile_root_folder,
 )
+from charmarr_lib.core._arr._recyclarr import (
+    RecyclarrError,
+    RecyclarrTimeoutError,
+    sync_trash_profiles,
+)
 
 __all__ = [
     "ApplicationConfigBuilder",
@@ -51,6 +56,8 @@ __all__ = [
     "MediaIndexerClient",
     "MediaManagerConnection",
     "QualityProfileResponse",
+    "RecyclarrError",
+    "RecyclarrTimeoutError",
     "RootFolderResponse",
     "SecretGetter",
     "config_has_api_key",
@@ -60,5 +67,6 @@ __all__ = [
     "reconcile_external_url",
     "reconcile_media_manager_connections",
     "reconcile_root_folder",
+    "sync_trash_profiles",
     "update_api_key",
 ]
