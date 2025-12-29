@@ -10,6 +10,7 @@ See ADR: apps/adr-003-recyclarr-integration.md
 """
 
 import logging
+import os
 import subprocess
 from pathlib import Path
 
@@ -64,17 +65,21 @@ def _run_recyclarr(charm_dir: Path, config_content: str) -> None:
     config_path = Path("/tmp/recyclarr.yml")
     try:
         config_path.write_text(config_content)
+        env = os.environ.copy()
+        env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
         result = subprocess.run(
             [str(recyclarr_bin), "sync", "--config", str(config_path)],
             capture_output=True,
             text=True,
             timeout=_RECYCLARR_TIMEOUT,
             check=False,
+            env=env,
         )
 
         if result.returncode != 0:
-            logger.error("Recyclarr sync failed: %s", result.stderr)
-            raise RecyclarrError(f"Recyclarr sync failed: {result.stderr}")
+            output = result.stderr or result.stdout
+            logger.error("Recyclarr sync failed: %s", output)
+            raise RecyclarrError(f"Recyclarr sync failed: {output}")
 
         logger.info("Recyclarr sync completed successfully")
     except subprocess.TimeoutExpired as e:
