@@ -9,16 +9,21 @@ and custom formats from Trash Guides to Radarr, Sonarr, and Lidarr.
 See ADR: apps/adr-003-recyclarr-integration.md
 """
 
+from __future__ import annotations
+
 import logging
-import os
-import subprocess
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from charmarr_lib.core.enums import MediaManager
 
+if TYPE_CHECKING:
+    import ops
+
 logger = logging.getLogger(__name__)
 
-_RECYCLARR_TIMEOUT = 120
+_RECYCLARR_TIMEOUT = 120.0
+_RECYCLARR_BIN_PATH = "/app/recyclarr/recyclarr"
+_RECYCLARR_CONFIG_PATH = "/tmp/recyclarr.yml"
 
 
 class RecyclarrError(Exception):
@@ -27,72 +32,76 @@ class RecyclarrError(Exception):
     pass
 
 
-class RecyclarrTimeoutError(RecyclarrError):
-    """Raised when Recyclarr execution times out."""
+def _expand_template_to_includes(manager: MediaManager, template: str) -> list[str]:
+    """Expand user-friendly template name to actual Recyclarr include names.
 
-    pass
+    Recyclarr templates (shown in `config list templates`) are NOT directly usable
+    in the `include:` directive. Each template maps to multiple includes:
+    - quality-definition (shared across profiles)
+    - quality-profile-{template}
+    - custom-formats-{template}
+    """
+    prefix = manager.value
+    return [
+        f"{prefix}-quality-definition-movie",
+        f"{prefix}-quality-profile-{template}",
+        f"{prefix}-custom-formats-{template}",
+    ]
 
 
 def _generate_config(
     manager: MediaManager,
     api_key: str,
-    profiles: list[str],
+    templates: list[str],
     port: int,
     base_url: str | None,
 ) -> str:
-    """Generate Recyclarr YAML config."""
+    """Generate Recyclarr YAML config using TRaSH Guide templates."""
     config_key = manager.value
     url_base = base_url or ""
-    profiles_yaml = "\n".join(f"          - {profile}" for profile in profiles)
+
+    # Expand templates to actual include names and deduplicate
+    includes: list[str] = []
+    seen: set[str] = set()
+    for template in templates:
+        for include in _expand_template_to_includes(manager, template):
+            if include not in seen:
+                includes.append(include)
+                seen.add(include)
+
+    includes_yaml = "\n".join(f"      - template: {inc}" for inc in includes)
 
     return f"""{config_key}:
   {config_key}:
     base_url: http://localhost:{port}{url_base}
     api_key: {api_key}
 
-    quality_profiles:
-      - trash_ids:
-{profiles_yaml}
+    include:
+{includes_yaml}
 """
 
 
-def _run_recyclarr(charm_dir: Path, config_content: str) -> None:
-    """Run Recyclarr binary with config."""
-    recyclarr_bin = charm_dir / "bin" / "recyclarr"
-    if not recyclarr_bin.exists():
-        raise RecyclarrError(f"Recyclarr binary not found at {recyclarr_bin}")
+def _run_recyclarr_in_container(
+    container: ops.Container,
+    config_content: str,
+) -> None:
+    """Run Recyclarr in a container with the official recyclarr image."""
+    container.push(_RECYCLARR_CONFIG_PATH, config_content, make_dirs=True)
 
-    config_path = Path("/tmp/recyclarr.yml")
+    process = container.exec(
+        [_RECYCLARR_BIN_PATH, "sync", "--config", _RECYCLARR_CONFIG_PATH],
+        timeout=_RECYCLARR_TIMEOUT,
+    )
     try:
-        config_path.write_text(config_content)
-        env = os.environ.copy()
-        env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
-        charm_usr_bin = str(charm_dir / "usr" / "bin")
-        env["PATH"] = f"{charm_usr_bin}:{env.get('PATH', '')}"
-        result = subprocess.run(
-            [str(recyclarr_bin), "sync", "--config", str(config_path)],
-            capture_output=True,
-            text=True,
-            timeout=_RECYCLARR_TIMEOUT,
-            check=False,
-            env=env,
-        )
-
-        if result.returncode != 0:
-            output = result.stderr or result.stdout
-            logger.error("Recyclarr sync failed: %s", output)
-            raise RecyclarrError(f"Recyclarr sync failed: {output}")
-
-        logger.info("Recyclarr sync completed successfully")
-    except subprocess.TimeoutExpired as e:
-        logger.error("Recyclarr sync timed out after %d seconds", _RECYCLARR_TIMEOUT)
-        raise RecyclarrTimeoutError(f"Recyclarr sync timed out after {_RECYCLARR_TIMEOUT}s") from e
-    finally:
-        config_path.unlink(missing_ok=True)
+        stdout, _ = process.wait_output()
+        logger.info("Recyclarr sync completed: %s", stdout)
+    except Exception as e:
+        logger.error("Recyclarr sync failed: %s", e)
+        raise RecyclarrError(f"Recyclarr sync failed: {e}") from e
 
 
 def sync_trash_profiles(
-    charm_dir: Path,
+    container: ops.Container,
     manager: MediaManager,
     api_key: str,
     profiles_config: str,
@@ -101,11 +110,11 @@ def sync_trash_profiles(
 ) -> None:
     """Sync Trash Guides profiles for the specified media manager.
 
-    Generates Recyclarr config and runs the binary to sync quality profiles
-    and custom formats from Trash Guides. Runs idempotently on every reconcile.
+    Generates Recyclarr config and runs it in the provided container
+    to sync quality profiles from Trash Guides. Runs idempotently.
 
     Args:
-        charm_dir: Path to the charm directory containing bin/recyclarr
+        container: Pebble container running the recyclarr image
         manager: The media manager type (RADARR, SONARR, etc.)
         api_key: API key for the media manager
         profiles_config: Comma-separated list of profile template names
@@ -114,17 +123,16 @@ def sync_trash_profiles(
 
     Raises:
         RecyclarrError: If Recyclarr execution fails
-        RecyclarrTimeoutError: If Recyclarr execution times out
     """
-    profiles = [p.strip() for p in profiles_config.split(",") if p.strip()]
-    if not profiles:
+    templates = [t.strip() for t in profiles_config.split(",") if t.strip()]
+    if not templates:
         return
 
     config = _generate_config(
         manager=manager,
         api_key=api_key,
-        profiles=profiles,
+        templates=templates,
         port=port,
         base_url=base_url,
     )
-    _run_recyclarr(charm_dir, config)
+    _run_recyclarr_in_container(container, config)

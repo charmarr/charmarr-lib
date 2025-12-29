@@ -39,7 +39,6 @@ from charmarr_lib.core._arr._reconcilers import (
 )
 from charmarr_lib.core._arr._recyclarr import (
     RecyclarrError,
-    RecyclarrTimeoutError,
     sync_trash_profiles,
 )
 
@@ -57,7 +56,6 @@ __all__ = [
     "MediaManagerConnection",
     "QualityProfileResponse",
     "RecyclarrError",
-    "RecyclarrTimeoutError",
     "RootFolderResponse",
     "SecretGetter",
     "config_has_api_key",
