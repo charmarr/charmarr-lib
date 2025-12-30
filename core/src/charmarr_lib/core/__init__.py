@@ -41,7 +41,9 @@ from charmarr_lib.core._juju import (
 from charmarr_lib.core._k8s import (
     K8sResourceManager,
     ReconcileResult,
+    is_hardware_device_mounted,
     is_storage_mounted,
+    reconcile_hardware_transcoding,
     reconcile_storage_volume,
 )
 from charmarr_lib.core.constants import (
@@ -86,6 +88,7 @@ __all__ = [
     "ensure_pebble_user",
     "generate_api_key",
     "get_secret_rotation_policy",
+    "is_hardware_device_mounted",
     "is_storage_mounted",
     "observe_events",
     "read_api_key",
@@ -94,6 +97,7 @@ __all__ = [
     "reconcile_config_xml",
     "reconcile_download_clients",
     "reconcile_external_url",
+    "reconcile_hardware_transcoding",
     "reconcile_media_manager_connections",
     "reconcile_root_folder",
     "reconcile_storage_volume",
