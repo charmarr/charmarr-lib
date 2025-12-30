@@ -29,6 +29,7 @@ class ArrCredentials(BaseModel):
 
     api_key: str
     secret_id: str
+    base_url: str = ""
 
 
 def pack_arr_charms(charms_dir: Path) -> dict[str, Path]:

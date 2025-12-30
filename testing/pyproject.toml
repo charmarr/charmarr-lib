@@ -24,6 +24,7 @@ dependencies = [
     "pytest-jubilant>=0.1",
     "ops>=2.0",
     "pyyaml>=6.0",
+    "tenacity>=8.0",
 ]
 
 [project.optional-dependencies]

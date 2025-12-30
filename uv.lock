@@ -152,6 +152,7 @@ dependencies = [
     { name = "pytest-bdd" },
     { name = "pytest-jubilant" },
     { name = "pyyaml" },
+    { name = "tenacity" },
 ]
 
 [package.optional-dependencies]
@@ -173,6 +174,7 @@ requires-dist = [
     { name = "pytest-jubilant", specifier = ">=0.1" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
+    { name = "tenacity", specifier = ">=8.0" },
 ]
 provides-extras = ["dev"]
 

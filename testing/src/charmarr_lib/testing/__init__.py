@@ -10,7 +10,7 @@ from charmarr_lib.testing._arr import (
     pack_arr_charms,
 )
 from charmarr_lib.testing._charmcraft import get_oci_resources
-from charmarr_lib.testing._http import HttpResponse, http_request
+from charmarr_lib.testing._http import HttpResponse, http_from_unit, http_request
 from charmarr_lib.testing._juju import (
     create_vpn_secret,
     deploy_multimeter,
@@ -43,6 +43,7 @@ __all__ = [
     "get_node_cidr",
     "get_oci_resources",
     "grant_secret_to_app",
+    "http_from_unit",
     "http_request",
     "pack_arr_charms",
     "run_multimeter_action",

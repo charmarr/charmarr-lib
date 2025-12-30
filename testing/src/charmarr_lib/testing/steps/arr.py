@@ -4,11 +4,25 @@
 """Arr family shared step definitions."""
 
 import json
+import os
+from typing import Any
 
 import jubilant
-from pytest_bdd import given, parsers, then
+from pytest_bdd import given, parsers, then, when
 
-from charmarr_lib.testing import wait_for_active_idle
+from charmarr_lib.testing import ArrCredentials, http_from_unit, wait_for_active_idle
+
+SABNZBD_CHANNEL = os.environ.get("CHARMARR_SABNZBD_CHANNEL", "latest/edge")
+
+
+def _local_url(credentials: ArrCredentials, path: str) -> str:
+    """Convert base_url to localhost URL for exec from unit."""
+    from urllib.parse import urlparse
+
+    parsed = urlparse(credentials.base_url)
+    port = parsed.port or 80
+    url_base = parsed.path.rstrip("/")
+    return f"http://localhost:{port}{url_base}{path}"
 
 
 @given(parsers.parse("{requirer} is related to {provider} via media-indexer"))
@@ -20,6 +34,34 @@ def relate_via_media_indexer(juju: jubilant.Juju, requirer: str, provider: str) 
         return
     juju.integrate(f"{requirer}:media-indexer", f"{provider}:media-indexer")
     wait_for_active_idle(juju)
+
+
+@given(parsers.parse("{requirer} is related to {provider} via download-client"))
+def relate_via_download_client(juju: jubilant.Juju, requirer: str, provider: str) -> None:
+    """Integrate requirer with provider via download-client relation."""
+    status = juju.status()
+    app_status = status.apps.get(requirer)
+    if app_status and "download-client" in app_status.relations:
+        return
+    juju.integrate(f"{requirer}:download-client", f"{provider}:download-client")
+    wait_for_active_idle(juju)
+
+
+@given("sabnzbd is deployed", target_fixture="sabnzbd_deployed")
+def sabnzbd_is_deployed(juju: jubilant.Juju, storage_deployed: None) -> None:
+    """Deploy sabnzbd from Charmhub."""
+    status = juju.status()
+    if "sabnzbd" in status.apps:
+        return
+    juju.deploy("sabnzbd-k8s", app="sabnzbd", channel=SABNZBD_CHANNEL, trust=True)
+    juju.integrate("sabnzbd:media-storage", "charmarr-storage:media-storage")
+    wait_for_active_idle(juju)
+
+
+@when(parsers.parse("recyclarr config action is run on {app}"))
+def run_recyclarr_action(juju: jubilant.Juju, app: str) -> None:
+    """Run recyclarr sync action on an arr app."""
+    juju.run(f"{app}/0", "sync-recyclarr")
 
 
 @then(parsers.parse("the {app} charm should be active"))
@@ -45,3 +87,36 @@ def api_key_secret_exists(juju: jubilant.Juju, app: str) -> None:
             break
 
     assert found, f"No api-key secret found for {app}"
+
+
+@then(parsers.parse("{app} API should return system status"))
+def arr_api_returns_status(juju: jubilant.Juju, app: str, credentials: ArrCredentials) -> None:
+    """Verify arr API is accessible and returns system status."""
+    url = _local_url(credentials, "/api/v3/system/status")
+    response = http_from_unit(juju, f"{app}/0", url, headers={"X-Api-Key": credentials.api_key})
+    assert response.status_code == 200
+    data = response.json_body()
+    assert "appName" in data
+
+
+@then(parsers.parse("{app} should have sabnzbd registered as download client"))
+def arr_has_sabnzbd_download_client(
+    juju: jubilant.Juju, app: str, credentials: ArrCredentials
+) -> None:
+    """Verify sabnzbd is registered as download client."""
+    url = _local_url(credentials, "/api/v3/downloadclient")
+    response = http_from_unit(juju, f"{app}/0", url, headers={"X-Api-Key": credentials.api_key})
+    assert response.status_code == 200
+    clients: list[dict[str, Any]] = response.json_body()
+    sabnzbd_clients = [c for c in clients if c.get("implementation") == "Sabnzbd"]
+    assert len(sabnzbd_clients) > 0, f"No SABnzbd download client found in {app}"
+
+
+@then(parsers.parse("{app} should have quality profiles configured"))
+def arr_has_quality_profiles(juju: jubilant.Juju, app: str, credentials: ArrCredentials) -> None:
+    """Verify arr has quality profiles from recyclarr."""
+    url = _local_url(credentials, "/api/v3/qualityprofile")
+    response = http_from_unit(juju, f"{app}/0", url, headers={"X-Api-Key": credentials.api_key})
+    assert response.status_code == 200
+    profiles: list[dict[str, Any]] = response.json_body()
+    assert len(profiles) > 0, f"No quality profiles found in {app}"
