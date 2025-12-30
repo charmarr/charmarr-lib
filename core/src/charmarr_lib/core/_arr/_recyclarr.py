@@ -37,13 +37,14 @@ def _expand_template_to_includes(manager: MediaManager, template: str) -> list[s
 
     Recyclarr templates (shown in `config list templates`) are NOT directly usable
     in the `include:` directive. Each template maps to multiple includes:
-    - quality-definition (shared across profiles)
+    - quality-definition (varies by media type: movie for radarr, series for sonarr)
     - quality-profile-{template}
     - custom-formats-{template}
     """
     prefix = manager.value
+    quality_type = "series" if manager == MediaManager.SONARR else "movie"
     return [
-        f"{prefix}-quality-definition-movie",
+        f"{prefix}-quality-definition-{quality_type}",
         f"{prefix}-quality-profile-{template}",
         f"{prefix}-custom-formats-{template}",
     ]

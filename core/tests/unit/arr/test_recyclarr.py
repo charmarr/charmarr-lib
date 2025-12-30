@@ -103,3 +103,24 @@ def test_sync_pushes_config_and_execs(mock_container):
     exec_args = mock_container.exec.call_args
     assert "/app/recyclarr/recyclarr" in exec_args[0][0]
     assert "sync" in exec_args[0][0]
+
+
+def test_sonarr_uses_series_quality_definition(mock_container):
+    """Sonarr uses series quality definition, not movie."""
+    mock_process = MagicMock()
+    mock_process.wait_output.return_value = ("success", "")
+    mock_container.exec.return_value = mock_process
+
+    sync_trash_profiles(
+        container=mock_container,
+        manager=MediaManager.SONARR,
+        api_key="key",
+        profiles_config="web-1080p-v4",
+        port=8989,
+    )
+
+    push_calls = mock_container.push.call_args_list
+    config_call = [c for c in push_calls if "/tmp/recyclarr.yml" in str(c)]
+    config_content = config_call[0][0][1]
+    assert "- template: sonarr-quality-definition-series" in config_content
+    assert "sonarr-quality-definition-movie" not in config_content
