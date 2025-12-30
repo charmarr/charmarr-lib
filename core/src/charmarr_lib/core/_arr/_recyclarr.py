@@ -40,14 +40,25 @@ def _expand_template_to_includes(manager: MediaManager, template: str) -> list[s
     - quality-definition (varies by media type: movie for radarr, series for sonarr)
     - quality-profile-{template}
     - custom-formats-{template}
+
+    Sonarr uses v4 prefix for quality-profiles and custom-formats.
+    See: https://github.com/recyclarr/config-templates/tree/master/sonarr/includes
     """
     prefix = manager.value
-    quality_type = "series" if manager == MediaManager.SONARR else "movie"
-    return [
-        f"{prefix}-quality-definition-{quality_type}",
-        f"{prefix}-quality-profile-{template}",
-        f"{prefix}-custom-formats-{template}",
-    ]
+    if manager == MediaManager.RADARR:
+        return [
+            f"{prefix}-quality-definition-movie",
+            f"{prefix}-quality-profile-{template}",
+            f"{prefix}-custom-formats-{template}",
+        ]
+    elif manager == MediaManager.SONARR:
+        return [
+            f"{prefix}-quality-definition-series",
+            f"{prefix}-v4-quality-profile-{template}",
+            f"{prefix}-v4-custom-formats-{template}",
+        ]
+    else:
+        raise RecyclarrError(f"Unsupported media manager for Recyclarr: {manager}")
 
 
 def _generate_config(
