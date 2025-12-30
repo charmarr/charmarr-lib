@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.5.0...charmarr-lib-testing-v0.6.0) (2025-12-30)
+
+
+### Features
+
+* **testing:** add arr testing abstractions ([e114a13](https://github.com/charmarr/charmarr-lib/commit/e114a1378f84a65d91c6d63f25b93d7a9cb25f8e))
+
 ## [0.5.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.4.1...charmarr-lib-testing-v0.5.0) (2025-12-27)
 
 
