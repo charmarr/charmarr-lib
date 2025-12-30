@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.0...charmarr-lib-core-v0.7.1) (2025-12-30)
+
+
+### Bug Fixes
+
+* **core:** abstract common interface patterns into a base inbterface class and mixin ([8532d2f](https://github.com/charmarr/charmarr-lib/commit/8532d2fbb40751626be895080f3528516bb03a7b))
+
 ## [0.7.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.6.1...charmarr-lib-core-v0.7.0) (2025-12-30)
 
 
