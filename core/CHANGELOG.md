@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.3...charmarr-lib-core-v0.8.0) (2025-12-30)
+
+
+### Features
+
+* **core:** adds a hardware mount reconciler ([4c979c1](https://github.com/charmarr/charmarr-lib/commit/4c979c18b2df256247cd6d9919addfd8834cf319))
+
 ## [0.7.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.2...charmarr-lib-core-v0.7.3) (2025-12-30)
 
 
