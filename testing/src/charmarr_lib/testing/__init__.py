@@ -3,7 +3,12 @@
 
 """Testing utilities for Charmarr charms."""
 
-from charmarr_lib.testing._arr import ArrCredentials, get_arr_credentials, pack_arr_charms
+from charmarr_lib.testing._arr import (
+    ArrCredentials,
+    deploy_arr_charm,
+    get_arr_credentials,
+    pack_arr_charms,
+)
 from charmarr_lib.testing._charmcraft import get_oci_resources
 from charmarr_lib.testing._http import HttpResponse, http_request
 from charmarr_lib.testing._juju import (
@@ -29,6 +34,7 @@ __all__ = [
     "HttpResponse",
     "TFManager",
     "create_vpn_secret",
+    "deploy_arr_charm",
     "deploy_multimeter",
     "get_app_relation_data",
     "get_arr_credentials",
