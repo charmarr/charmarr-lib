@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.1...charmarr-lib-core-v0.7.2) (2025-12-30)
+
+
+### Bug Fixes
+
+* **core:** use series profiles in recyclarr for sonarr ([c3275da](https://github.com/charmarr/charmarr-lib/commit/c3275da0efe767ff6601fc40754b02694b192043))
+
 ## [0.7.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.0...charmarr-lib-core-v0.7.1) (2025-12-30)
 
 
