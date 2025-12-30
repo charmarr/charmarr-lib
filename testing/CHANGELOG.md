@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.6.0...charmarr-lib-testing-v0.7.0) (2025-12-30)
+
+
+### Features
+
+* **testing:** adds shared arr step def ([e184e6e](https://github.com/charmarr/charmarr-lib/commit/e184e6e301fe86b3bdec9596eb7be94de112f3d1))
+
+
+### Bug Fixes
+
+* **testing:** clean up code style ([45b9bb3](https://github.com/charmarr/charmarr-lib/commit/45b9bb3ec19ca6c086c9592a3f4b331ed1ced647))
+* **testing:** fix imports ([725ca82](https://github.com/charmarr/charmarr-lib/commit/725ca820b0e183bce7ee29b3731a050fd5321c25))
+* **testing:** sabnzbs in testing uses unsafe-mode ([2eba895](https://github.com/charmarr/charmarr-lib/commit/2eba895960b6695b31bab57062a8c6185b499b41))
+
 ## [0.6.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.5.0...charmarr-lib-testing-v0.6.0) (2025-12-30)
 
 
