@@ -31,6 +31,12 @@ from charmarr_lib.core.interfaces._media_manager import (
     MediaManagerRequirerData,
     QualityProfile,
 )
+from charmarr_lib.core.interfaces._media_server import (
+    MediaServerChangedEvent,
+    MediaServerProvider,
+    MediaServerProviderData,
+    MediaServerRequirer,
+)
 from charmarr_lib.core.interfaces._media_storage import (
     MediaStorageChangedEvent,
     MediaStorageProvider,
@@ -59,6 +65,10 @@ __all__ = [
     "MediaManagerProviderData",
     "MediaManagerRequirer",
     "MediaManagerRequirerData",
+    "MediaServerChangedEvent",
+    "MediaServerProvider",
+    "MediaServerProviderData",
+    "MediaServerRequirer",
     "MediaStorageChangedEvent",
     "MediaStorageProvider",
     "MediaStorageProviderData",
