@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.8.0...charmarr-lib-core-v0.9.0) (2025-12-30)
+
+
+### Features
+
+* **core:** adds a media server interface ([6ca707c](https://github.com/charmarr/charmarr-lib/commit/6ca707c2564fe8dc5152a36b75e0e45a0cca2175))
+
 ## [0.8.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.3...charmarr-lib-core-v0.8.0) (2025-12-30)
 
 
