@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.6.1...charmarr-lib-core-v0.7.0) (2025-12-30)
+
+
+### Features
+
+* **core:** add recyclarr abstractions ([4a86d54](https://github.com/charmarr/charmarr-lib/commit/4a86d54a338bc6f09eaa1ab591ceea084117ccc2))
+* **core:** adds a shared config reconciler for arrs ([ab5ff46](https://github.com/charmarr/charmarr-lib/commit/ab5ff46d47ec17aba2634efea3acbd2e8a04c413))
+* **core:** adds flaresolverr interface ([0fa35a7](https://github.com/charmarr/charmarr-lib/commit/0fa35a79af5d49a0bc2a1bce979143151267cdeb))
+* **core:** adds media indexer abstractions ([eb04ea1](https://github.com/charmarr/charmarr-lib/commit/eb04ea1d236032dc5f941d3540cdc373272fd389))
+
+
+### Bug Fixes
+
+* **core:** fix recyclarr dotnet globalization ([07c49fc](https://github.com/charmarr/charmarr-lib/commit/07c49fc60d0c1708d6a0f0c21fc630f7d7b2fa2a))
+* **core:** handles recyclarr as a side car ([dc708f2](https://github.com/charmarr/charmarr-lib/commit/dc708f22ce2d8f3c6e7d1efde4d38b71192cfc68))
+* **core:** makes arr reconcilers resilient to failures ([6df6a0c](https://github.com/charmarr/charmarr-lib/commit/6df6a0c8015c93f88e946947eccbb3c7bfbd720a))
+* **core:** recyclarr exten PATH with bin ([c248800](https://github.com/charmarr/charmarr-lib/commit/c248800914701b42d6148b93e4f6cc5c85e31c28))
+
 ## [0.6.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.6.0...charmarr-lib-core-v0.6.1) (2025-12-26)
 
 
