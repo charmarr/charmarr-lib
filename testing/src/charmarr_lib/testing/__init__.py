@@ -3,6 +3,7 @@
 
 """Testing utilities for Charmarr charms."""
 
+from charmarr_lib.testing._arr import ArrCredentials, get_arr_credentials, pack_arr_charms
 from charmarr_lib.testing._charmcraft import get_oci_resources
 from charmarr_lib.testing._http import HttpResponse, http_request
 from charmarr_lib.testing._juju import (
@@ -23,18 +24,21 @@ from charmarr_lib.testing._k8s import (
 from charmarr_lib.testing._terraform import TFManager
 
 __all__ = [
+    "ArrCredentials",
     "ContainerInfo",
     "HttpResponse",
     "TFManager",
     "create_vpn_secret",
     "deploy_multimeter",
     "get_app_relation_data",
+    "get_arr_credentials",
     "get_container_info",
     "get_ingress_ip",
     "get_node_cidr",
     "get_oci_resources",
     "grant_secret_to_app",
     "http_request",
+    "pack_arr_charms",
     "run_multimeter_action",
     "vpn_creds_available",
     "wait_for_active_idle",
