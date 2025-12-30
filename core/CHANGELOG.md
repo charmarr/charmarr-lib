@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.2...charmarr-lib-core-v0.7.3) (2025-12-30)
+
+
+### Bug Fixes
+
+* **core:** fixes recyclarrs quirky template formats ([025693a](https://github.com/charmarr/charmarr-lib/commit/025693ae0129889cb3bb21da6f3ccf0148183f94))
+
 ## [0.7.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.7.1...charmarr-lib-core-v0.7.2) (2025-12-30)
 
 
