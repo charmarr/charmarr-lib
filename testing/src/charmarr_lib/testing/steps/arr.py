@@ -48,7 +48,13 @@ def sabnzbd_is_deployed(juju: jubilant.Juju, storage_deployed: None) -> None:
     status = juju.status()
     if "sabnzbd" in status.apps:
         return
-    juju.deploy("sabnzbd-k8s", app="sabnzbd", channel=SABNZBD_CHANNEL, trust=True)
+    juju.deploy(
+        "sabnzbd-k8s",
+        app="sabnzbd",
+        channel=SABNZBD_CHANNEL,
+        trust=True,
+        config={"unsafe-mode": "true"},
+    )
     juju.integrate("sabnzbd:media-storage", "charmarr-storage:media-storage")
     wait_for_active_idle(juju)
 
@@ -56,7 +62,7 @@ def sabnzbd_is_deployed(juju: jubilant.Juju, storage_deployed: None) -> None:
 @when(parsers.parse("recyclarr config action is run on {app}"))
 def run_recyclarr_action(juju: jubilant.Juju, app: str) -> None:
     """Run recyclarr sync action on an arr app."""
-    juju.run(f"{app}/0", "sync-recyclarr")
+    juju.run(f"{app}/0", "sync-trash-profiles")
 
 
 @then(parsers.parse("the {app} charm should be active"))
