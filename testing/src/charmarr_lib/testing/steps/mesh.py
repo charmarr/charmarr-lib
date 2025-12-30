@@ -8,7 +8,7 @@ import os
 import jubilant
 from pytest_bdd import given, parsers
 
-from charmarr_lib.testing import wait_for_active_idle
+from charmarr_lib.testing import ensure_related, wait_for_active_idle
 
 ISTIO_CHANNEL = os.environ.get("CHARMARR_ISTIO_CHANNEL", "2/edge")
 
@@ -46,20 +46,10 @@ def deploy_istio_ingress(juju: jubilant.Juju) -> None:
 @given(parsers.parse("{app} is related to istio-beacon via service-mesh"))
 def relate_app_to_mesh(juju: jubilant.Juju, app: str) -> None:
     """Integrate an app with istio-beacon via service-mesh relation."""
-    status = juju.status()
-    app_status = status.apps.get(app)
-    if app_status and "service-mesh" in app_status.relations:
-        return
-    juju.integrate(f"{app}:service-mesh", "istio-beacon:service-mesh")
-    wait_for_active_idle(juju)
+    ensure_related(juju, app, "service-mesh", "istio-beacon:service-mesh")
 
 
 @given(parsers.parse("{app} is related to istio-ingress via istio-ingress-route"))
 def relate_app_to_ingress(juju: jubilant.Juju, app: str) -> None:
     """Integrate an app with istio-ingress via istio-ingress-route relation."""
-    status = juju.status()
-    app_status = status.apps.get(app)
-    if app_status and "istio-ingress-route" in app_status.relations:
-        return
-    juju.integrate(f"{app}:istio-ingress-route", "istio-ingress:istio-ingress-route")
-    wait_for_active_idle(juju)
+    ensure_related(juju, app, "istio-ingress-route", "istio-ingress:istio-ingress-route")

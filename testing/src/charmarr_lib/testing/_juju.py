@@ -164,3 +164,45 @@ def get_node_cidr() -> str:
 
     logger.warning("Could not discover node IP, using 10.0.0.0/8 as fallback")
     return "10.0.0.0/8"
+
+
+def assert_app_active(juju: jubilant.Juju, app: str) -> None:
+    """Assert that an application is in active status.
+
+    Args:
+        juju: Juju instance.
+        app: Application name to check.
+
+    Raises:
+        AssertionError: If the application is not in active status.
+    """
+    status = juju.status()
+    app_status = status.apps[app]
+    assert app_status.app_status.current == "active", (
+        f"{app} status: {app_status.app_status.current} - {app_status.app_status.message}"
+    )
+
+
+def ensure_related(
+    juju: jubilant.Juju,
+    app: str,
+    endpoint: str,
+    provider_endpoint: str,
+) -> None:
+    """Ensure an application is related via a specific endpoint.
+
+    Checks if the relation exists first to avoid duplicate integration.
+    Waits for active/idle after integrating.
+
+    Args:
+        juju: Juju instance.
+        app: Requirer application name.
+        endpoint: Endpoint name on the requirer app.
+        provider_endpoint: Full provider endpoint (e.g., "gluetun:vpn-gateway").
+    """
+    status = juju.status()
+    app_status = status.apps.get(app)
+    if app_status and endpoint in app_status.relations:
+        return
+    juju.integrate(f"{app}:{endpoint}", provider_endpoint)
+    wait_for_active_idle(juju)

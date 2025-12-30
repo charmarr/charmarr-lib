@@ -12,8 +12,10 @@ from charmarr_lib.testing._arr import (
 from charmarr_lib.testing._charmcraft import get_oci_resources
 from charmarr_lib.testing._http import HttpResponse, http_from_unit, http_request
 from charmarr_lib.testing._juju import (
+    assert_app_active,
     create_vpn_secret,
     deploy_multimeter,
+    ensure_related,
     get_app_relation_data,
     get_node_cidr,
     grant_secret_to_app,
@@ -33,9 +35,11 @@ __all__ = [
     "ContainerInfo",
     "HttpResponse",
     "TFManager",
+    "assert_app_active",
     "create_vpn_secret",
     "deploy_arr_charm",
     "deploy_multimeter",
+    "ensure_related",
     "get_app_relation_data",
     "get_arr_credentials",
     "get_container_info",

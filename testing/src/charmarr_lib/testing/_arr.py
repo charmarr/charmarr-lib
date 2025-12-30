@@ -7,7 +7,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import jubilant
 from pydantic import BaseModel
@@ -15,9 +14,6 @@ from pytest_jubilant import pack
 
 from charmarr_lib.testing._charmcraft import get_oci_resources
 from charmarr_lib.testing._juju import wait_for_active_idle
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

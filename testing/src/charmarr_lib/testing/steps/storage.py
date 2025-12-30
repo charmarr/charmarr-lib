@@ -8,7 +8,7 @@ import os
 import jubilant
 from pytest_bdd import given, then
 
-from charmarr_lib.testing import wait_for_active_idle
+from charmarr_lib.testing import assert_app_active, wait_for_active_idle
 
 STORAGE_CHARM = "charmarr-storage-k8s"
 STORAGE_CHANNEL = os.environ.get("CHARMARR_STORAGE_CHANNEL", "latest/edge")
@@ -36,8 +36,4 @@ def deploy_storage_from_charmhub(juju: jubilant.Juju) -> None:
 @then("the storage charm should be active")
 def storage_active(juju: jubilant.Juju) -> None:
     """Assert storage charm is active."""
-    status = juju.status()
-    app = status.apps["charmarr-storage"]
-    assert app.app_status.current == "active", (
-        f"Storage status: {app.app_status.current} - {app.app_status.message}"
-    )
+    assert_app_active(juju, "charmarr-storage")

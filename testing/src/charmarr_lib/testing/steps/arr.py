@@ -6,19 +6,24 @@
 import json
 import os
 from typing import Any
+from urllib.parse import urlparse
 
 import jubilant
 from pytest_bdd import given, parsers, then, when
 
-from charmarr_lib.testing import ArrCredentials, http_from_unit, wait_for_active_idle
+from charmarr_lib.testing import (
+    ArrCredentials,
+    assert_app_active,
+    ensure_related,
+    http_from_unit,
+    wait_for_active_idle,
+)
 
 SABNZBD_CHANNEL = os.environ.get("CHARMARR_SABNZBD_CHANNEL", "latest/edge")
 
 
 def _local_url(credentials: ArrCredentials, path: str) -> str:
     """Convert base_url to localhost URL for exec from unit."""
-    from urllib.parse import urlparse
-
     parsed = urlparse(credentials.base_url)
     port = parsed.port or 80
     url_base = parsed.path.rstrip("/")
@@ -28,23 +33,13 @@ def _local_url(credentials: ArrCredentials, path: str) -> str:
 @given(parsers.parse("{requirer} is related to {provider} via media-indexer"))
 def relate_via_media_indexer(juju: jubilant.Juju, requirer: str, provider: str) -> None:
     """Integrate requirer with provider via media-indexer relation."""
-    status = juju.status()
-    app_status = status.apps.get(requirer)
-    if app_status and "media-indexer" in app_status.relations:
-        return
-    juju.integrate(f"{requirer}:media-indexer", f"{provider}:media-indexer")
-    wait_for_active_idle(juju)
+    ensure_related(juju, requirer, "media-indexer", f"{provider}:media-indexer")
 
 
 @given(parsers.parse("{requirer} is related to {provider} via download-client"))
 def relate_via_download_client(juju: jubilant.Juju, requirer: str, provider: str) -> None:
     """Integrate requirer with provider via download-client relation."""
-    status = juju.status()
-    app_status = status.apps.get(requirer)
-    if app_status and "download-client" in app_status.relations:
-        return
-    juju.integrate(f"{requirer}:download-client", f"{provider}:download-client")
-    wait_for_active_idle(juju)
+    ensure_related(juju, requirer, "download-client", f"{provider}:download-client")
 
 
 @given("sabnzbd is deployed", target_fixture="sabnzbd_deployed")
@@ -67,11 +62,7 @@ def run_recyclarr_action(juju: jubilant.Juju, app: str) -> None:
 @then(parsers.parse("the {app} charm should be active"))
 def charm_should_be_active(juju: jubilant.Juju, app: str) -> None:
     """Assert a charm is active."""
-    status = juju.status()
-    app_status = status.apps[app]
-    assert app_status.app_status.current == "active", (
-        f"{app} status: {app_status.app_status.current} - {app_status.app_status.message}"
-    )
+    assert_app_active(juju, app)
 
 
 @then(parsers.parse("an api-key secret should exist for {app}"))

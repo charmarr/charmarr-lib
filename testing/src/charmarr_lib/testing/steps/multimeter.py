@@ -6,7 +6,7 @@
 import jubilant
 from pytest_bdd import given, parsers, then
 
-from charmarr_lib.testing import deploy_multimeter, wait_for_active_idle
+from charmarr_lib.testing import assert_app_active, deploy_multimeter, wait_for_active_idle
 
 
 @given("the charmarr-multimeter charm is deployed")
@@ -32,8 +32,4 @@ def relate_multimeter_download_client(juju: jubilant.Juju, app: str) -> None:
 @then("the multimeter charm should be active")
 def multimeter_active(juju: jubilant.Juju) -> None:
     """Assert multimeter charm is active."""
-    status = juju.status()
-    app = status.apps["charmarr-multimeter"]
-    assert app.app_status.current == "active", (
-        f"Multimeter status: {app.app_status.current} - {app.app_status.message}"
-    )
+    assert_app_active(juju, "charmarr-multimeter")
