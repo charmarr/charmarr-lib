@@ -5,10 +5,14 @@
 
 from typing import Any
 
-from ops import EventBase, EventSource, Object, ObjectEvents
+from ops import EventBase, EventSource, ObjectEvents
 from pydantic import BaseModel, ValidationError, model_validator
 
 from charmarr_lib.core.enums import DownloadClient, DownloadClientType, MediaManager
+from charmarr_lib.core.interfaces._base import (
+    EventObservingMixin,
+    RelationInterfaceBase,
+)
 
 
 class DownloadClientProviderData(BaseModel):
@@ -54,35 +58,24 @@ class DownloadClientChangedEvent(EventBase):
     pass
 
 
-class DownloadClientProvider(Object):
+class DownloadClientProvider(
+    RelationInterfaceBase[DownloadClientProviderData, DownloadClientRequirerData]
+):
     """Provider side of download-client interface."""
 
     def __init__(self, charm: Any, relation_name: str = "download-client") -> None:
         super().__init__(charm, relation_name)
-        self._charm = charm
-        self._relation_name = relation_name
+
+    def _get_remote_data_model(self) -> type[DownloadClientRequirerData]:
+        return DownloadClientRequirerData
 
     def publish_data(self, data: DownloadClientProviderData) -> None:
         """Publish provider data to all relations."""
-        if not self._charm.unit.is_leader():
-            return
-
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            relation.data[self._charm.app]["config"] = data.model_dump_json()
+        self._publish_to_all_relations(data)
 
     def get_requirers(self) -> list[DownloadClientRequirerData]:
         """Get all connected requirers with valid data."""
-        requirers = []
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            try:
-                app_data = relation.data[relation.app]
-                if app_data and "config" in app_data:
-                    requirers.append(
-                        DownloadClientRequirerData.model_validate_json(app_data["config"])
-                    )
-            except (ValidationError, KeyError):
-                continue
-        return requirers
+        return self._get_all_remote_app_data()
 
 
 class DownloadClientRequirerEvents(ObjectEvents):
@@ -91,48 +84,31 @@ class DownloadClientRequirerEvents(ObjectEvents):
     changed = EventSource(DownloadClientChangedEvent)
 
 
-class DownloadClientRequirer(Object):
+class DownloadClientRequirer(
+    EventObservingMixin,
+    RelationInterfaceBase[DownloadClientRequirerData, DownloadClientProviderData],
+):
     """Requirer side of download-client interface."""
 
     on = DownloadClientRequirerEvents()  # type: ignore[assignment]
 
     def __init__(self, charm: Any, relation_name: str = "download-client") -> None:
         super().__init__(charm, relation_name)
-        self._charm = charm
-        self._relation_name = relation_name
-        events = charm.on[relation_name]
-        self.framework.observe(events.relation_changed, self._emit_changed)
-        self.framework.observe(events.relation_broken, self._emit_changed)
+        self._setup_event_observation()
 
-    def _emit_changed(self, event: EventBase) -> None:
-        self.on.changed.emit()
+    def _get_remote_data_model(self) -> type[DownloadClientProviderData]:
+        return DownloadClientProviderData
 
     def publish_data(self, data: DownloadClientRequirerData) -> None:
         """Publish requirer data to all relations."""
-        if not self._charm.unit.is_leader():
-            return
-
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            relation.data[self._charm.app]["config"] = data.model_dump_json()
+        self._publish_to_all_relations(data)
 
     def get_providers(self) -> list[DownloadClientProviderData]:
         """Get all connected download clients with valid data."""
-        providers = []
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            try:
-                provider_app = relation.app
-                if provider_app:
-                    app_data = relation.data[provider_app]
-                    if app_data and "config" in app_data:
-                        providers.append(
-                            DownloadClientProviderData.model_validate_json(app_data["config"])
-                        )
-            except (ValidationError, KeyError):
-                continue
-        return providers
+        return self._get_all_provider_data()
 
     def is_ready(self) -> bool:
-        """Check if requirer has published data and has ≥1 valid provider."""
+        """Check if requirer has published data and has >=1 valid provider."""
         relations = self._charm.model.relations.get(self._relation_name, [])
         if not relations:
             return False

@@ -76,7 +76,7 @@ def _set_element(content: str, element: str, value: str | int) -> str:
 
 def _remove_element(content: str, element: str) -> str:
     """Remove an XML element if it exists."""
-    return re.sub(rf"\s*<{element}>[^<]*</{element}>\n?", "", content)
+    return re.sub(rf"\s*<{element}>[^<]*</{element}>\s*", "", content)
 
 
 def reconcile_config_xml(

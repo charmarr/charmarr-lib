@@ -19,6 +19,8 @@ from charmarr_lib.core.enums import MediaManager
 if TYPE_CHECKING:
     import ops
 
+import ops.pebble
+
 logger = logging.getLogger(__name__)
 
 _RECYCLARR_TIMEOUT = 120.0
@@ -93,7 +95,7 @@ def _run_recyclarr_in_container(
     try:
         stdout, _ = process.wait_output()
         logger.info("Recyclarr sync completed: %s", stdout)
-    except Exception as e:
+    except (ops.pebble.ExecError, ops.pebble.ChangeError) as e:
         logger.error("Recyclarr sync failed: %s", e)
         raise RecyclarrError(f"Recyclarr sync failed: {e}") from e
 

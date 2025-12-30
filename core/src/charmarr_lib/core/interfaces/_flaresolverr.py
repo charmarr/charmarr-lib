@@ -5,8 +5,13 @@
 
 from typing import Any
 
-from ops import EventBase, EventSource, Object, ObjectEvents
-from pydantic import BaseModel, Field, ValidationError
+from ops import EventBase, EventSource, ObjectEvents
+from pydantic import BaseModel, Field
+
+from charmarr_lib.core.interfaces._base import (
+    EventObservingMixin,
+    RelationInterfaceBase,
+)
 
 
 class FlareSolverrProviderData(BaseModel):
@@ -21,21 +26,18 @@ class FlareSolverrChangedEvent(EventBase):
     pass
 
 
-class FlareSolverrProvider(Object):
+class FlareSolverrProvider(RelationInterfaceBase[FlareSolverrProviderData, BaseModel]):
     """Provider side of flaresolverr interface."""
 
     def __init__(self, charm: Any, relation_name: str = "flaresolverr") -> None:
         super().__init__(charm, relation_name)
-        self._charm = charm
-        self._relation_name = relation_name
+
+    def _get_remote_data_model(self) -> type[BaseModel]:
+        return BaseModel
 
     def publish_data(self, data: FlareSolverrProviderData) -> None:
         """Publish provider data to all relations."""
-        if not self._charm.unit.is_leader():
-            return
-
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            relation.data[self._charm.app]["config"] = data.model_dump_json()
+        self._publish_to_all_relations(data)
 
 
 class FlareSolverrRequirerEvents(ObjectEvents):
@@ -44,37 +46,23 @@ class FlareSolverrRequirerEvents(ObjectEvents):
     changed = EventSource(FlareSolverrChangedEvent)
 
 
-class FlareSolverrRequirer(Object):
+class FlareSolverrRequirer(
+    EventObservingMixin, RelationInterfaceBase[BaseModel, FlareSolverrProviderData]
+):
     """Requirer side of flaresolverr interface."""
 
     on = FlareSolverrRequirerEvents()  # type: ignore[assignment]
 
     def __init__(self, charm: Any, relation_name: str = "flaresolverr") -> None:
         super().__init__(charm, relation_name)
-        self._charm = charm
-        self._relation_name = relation_name
-        events = charm.on[relation_name]
-        self.framework.observe(events.relation_changed, self._emit_changed)
-        self.framework.observe(events.relation_broken, self._emit_changed)
+        self._setup_event_observation()
 
-    def _emit_changed(self, event: EventBase) -> None:
-        self.on.changed.emit()
+    def _get_remote_data_model(self) -> type[FlareSolverrProviderData]:
+        return FlareSolverrProviderData
 
     def get_provider(self) -> FlareSolverrProviderData | None:
         """Get FlareSolverr provider data if available."""
-        relation = self._charm.model.get_relation(self._relation_name)
-        if not relation:
-            return None
-
-        try:
-            provider_app = relation.app
-            if provider_app:
-                provider_data = relation.data[provider_app]
-                if provider_data and "config" in provider_data:
-                    return FlareSolverrProviderData.model_validate_json(provider_data["config"])
-        except (ValidationError, KeyError):
-            pass
-        return None
+        return self._get_single_provider_data()
 
     def is_ready(self) -> bool:
         """Check if FlareSolverr is available."""

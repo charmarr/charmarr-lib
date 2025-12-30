@@ -5,10 +5,14 @@
 
 from typing import Any
 
-from ops import EventBase, EventSource, Object, ObjectEvents
+from ops import EventBase, EventSource, ObjectEvents
 from pydantic import BaseModel, ValidationError
 
 from charmarr_lib.core.enums import MediaIndexer, MediaManager
+from charmarr_lib.core.interfaces._base import (
+    EventObservingMixin,
+    RelationInterfaceBase,
+)
 
 
 class MediaIndexerProviderData(BaseModel):
@@ -42,46 +46,30 @@ class MediaIndexerProviderEvents(ObjectEvents):
     changed = EventSource(MediaIndexerChangedEvent)
 
 
-class MediaIndexerProvider(Object):
+class MediaIndexerProvider(
+    EventObservingMixin, RelationInterfaceBase[MediaIndexerProviderData, MediaIndexerRequirerData]
+):
     """Provider side of media-indexer interface."""
 
     on = MediaIndexerProviderEvents()  # type: ignore[assignment]
 
     def __init__(self, charm: Any, relation_name: str = "media-indexer") -> None:
         super().__init__(charm, relation_name)
-        self._charm = charm
-        self._relation_name = relation_name
-        events = charm.on[relation_name]
-        self.framework.observe(events.relation_changed, self._emit_changed)
-        self.framework.observe(events.relation_broken, self._emit_changed)
+        self._setup_event_observation()
 
-    def _emit_changed(self, event: EventBase) -> None:
-        self.on.changed.emit()
+    def _get_remote_data_model(self) -> type[MediaIndexerRequirerData]:
+        return MediaIndexerRequirerData
 
     def publish_data(self, data: MediaIndexerProviderData) -> None:
         """Publish provider data to all relations."""
-        if not self._charm.unit.is_leader():
-            return
-
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            relation.data[self._charm.app]["config"] = data.model_dump_json()
+        self._publish_to_all_relations(data)
 
     def get_requirers(self) -> list[MediaIndexerRequirerData]:
         """Get all connected requirers with valid data."""
-        requirers = []
-        for relation in self._charm.model.relations.get(self._relation_name, []):
-            try:
-                app_data = relation.data[relation.app]
-                if app_data and "config" in app_data:
-                    requirers.append(
-                        MediaIndexerRequirerData.model_validate_json(app_data["config"])
-                    )
-            except (ValidationError, KeyError):
-                continue
-        return requirers
+        return self._get_all_remote_app_data()
 
     def is_ready(self) -> bool:
-        """Check if provider has published data and has ≥1 valid requirer."""
+        """Check if provider has published data and has >=1 valid requirer."""
         relations = self._charm.model.relations.get(self._relation_name, [])
         if not relations:
             return False
@@ -104,47 +92,27 @@ class MediaIndexerRequirerEvents(ObjectEvents):
     changed = EventSource(MediaIndexerChangedEvent)
 
 
-class MediaIndexerRequirer(Object):
+class MediaIndexerRequirer(
+    EventObservingMixin, RelationInterfaceBase[MediaIndexerRequirerData, MediaIndexerProviderData]
+):
     """Requirer side of media-indexer interface."""
 
     on = MediaIndexerRequirerEvents()  # type: ignore[assignment]
 
     def __init__(self, charm: Any, relation_name: str = "media-indexer") -> None:
         super().__init__(charm, relation_name)
-        self._charm = charm
-        self._relation_name = relation_name
-        events = charm.on[relation_name]
-        self.framework.observe(events.relation_changed, self._emit_changed)
-        self.framework.observe(events.relation_broken, self._emit_changed)
+        self._setup_event_observation()
 
-    def _emit_changed(self, event: EventBase) -> None:
-        self.on.changed.emit()
+    def _get_remote_data_model(self) -> type[MediaIndexerProviderData]:
+        return MediaIndexerProviderData
 
     def publish_data(self, data: MediaIndexerRequirerData) -> None:
         """Publish requirer data to relation."""
-        if not self._charm.unit.is_leader():
-            return
-
-        relation = self._charm.model.get_relation(self._relation_name)
-        if relation:
-            relation.data[self._charm.app]["config"] = data.model_dump_json()
+        self._publish_to_single_relation(data)
 
     def get_provider_data(self) -> MediaIndexerProviderData | None:
         """Get provider data if available."""
-        relation = self._charm.model.get_relation(self._relation_name)
-        if not relation:
-            return None
-
-        try:
-            provider_app = relation.app
-            if provider_app:
-                app_data = relation.data[provider_app]
-                if app_data and "config" in app_data:
-                    return MediaIndexerProviderData.model_validate_json(app_data["config"])
-        except (ValidationError, KeyError):
-            pass
-
-        return None
+        return self._get_single_provider_data()
 
     def is_ready(self) -> bool:
         """Check if both requirer and provider have published valid data."""

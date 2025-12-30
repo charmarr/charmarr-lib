@@ -30,6 +30,17 @@ _MEDIA_MANAGER_CATEGORY_FIELDS: dict[MediaManager, str] = {
 # Maps media manager types to Prowlarr sync category IDs (NewzNab standard).
 # These are the default categories from Prowlarr's application schema.
 # https://wiki.servarr.com/en/prowlarr/settings#categories
+#
+# NewzNab category ID ranges by media type:
+#   2000-2090: Movies (2000=Movies, 2010=Foreign, 2020=Other, 2030=SD, 2040=HD,
+#              2045=UHD, 2050=BluRay, 2060=3D, 2070=DVD, 2080=WEB-DL, 2090=x265)
+#   3000-3060: Audio (3000=Audio, 3010=MP3, 3020=Video, 3030=Audiobook,
+#              3040=Lossless, 3050=Podcast, 3060=Foreign)
+#   5000-5090: TV (5000=TV, 5010=WEB-DL, 5020=Foreign, 5030=SD, 5040=HD,
+#              5045=UHD, 5050=Other, 5060=Sport, 5070=Anime, 5080=Documentary, 5090=x265)
+#   6000-6090: XXX (same structure as Movies)
+#   7000-7060: Books (7000=Books, 7010=Mags, 7020=EBook, 7030=Comics,
+#              7040=Technical, 7050=Foreign, 7060=Undefined)
 _MEDIA_MANAGER_SYNC_CATEGORIES: dict[MediaManager, list[int]] = {
     MediaManager.RADARR: [2000, 2010, 2020, 2030, 2040, 2045, 2050, 2060, 2070, 2080, 2090],
     MediaManager.SONARR: [5000, 5010, 5020, 5030, 5040, 5045, 5050, 5060, 5070, 5080, 5090],

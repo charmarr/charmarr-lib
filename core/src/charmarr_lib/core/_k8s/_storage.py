@@ -132,6 +132,22 @@ def _build_storage_patch(
     }
 
 
+def _find_volume_index(volumes: list[Volume], name: str) -> int | None:
+    """Find the index of a volume by name."""
+    for i, vol in enumerate(volumes):
+        if vol.name == name:
+            return i
+    return None
+
+
+def _find_mount_index(mounts: list[VolumeMount], name: str) -> int | None:
+    """Find the index of a volume mount by name."""
+    for i, mount in enumerate(mounts):
+        if mount.name == name:
+            return i
+    return None
+
+
 def _build_remove_storage_json_patch(
     sts: StatefulSet,
     container_name: str,
@@ -151,24 +167,22 @@ def _build_remove_storage_json_patch(
     operations: list[dict] = []
 
     volumes = pod_spec.volumes or []
-    for i, vol in enumerate(volumes):
-        if vol.name == volume_name:
-            operations.append({"op": "remove", "path": f"/spec/template/spec/volumes/{i}"})
-            break
+    volume_idx = _find_volume_index(volumes, volume_name)
+    if volume_idx is not None:
+        operations.append({"op": "remove", "path": f"/spec/template/spec/volumes/{volume_idx}"})
 
     containers = pod_spec.containers or []
     for ci, container in enumerate(containers):
         if container.name == container_name:
             mounts = container.volumeMounts or []
-            for mi, mount in enumerate(mounts):
-                if mount.name == volume_name:
-                    operations.append(
-                        {
-                            "op": "remove",
-                            "path": f"/spec/template/spec/containers/{ci}/volumeMounts/{mi}",
-                        }
-                    )
-                    break
+            mount_idx = _find_mount_index(mounts, volume_name)
+            if mount_idx is not None:
+                operations.append(
+                    {
+                        "op": "remove",
+                        "path": f"/spec/template/spec/containers/{ci}/volumeMounts/{mount_idx}",
+                    }
+                )
             break
 
     if pod_spec.securityContext is not None:

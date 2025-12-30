@@ -40,6 +40,10 @@ def ensure_pebble_user(
 
     Returns:
         True if any changes were made, False if entries already existed.
+
+    Side Effects:
+        Modifies /etc/passwd and /etc/group in the container if the specified
+        UID/GID entries do not already exist.
     """
     changed = False
 

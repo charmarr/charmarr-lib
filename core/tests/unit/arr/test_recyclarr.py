@@ -5,6 +5,7 @@
 
 from unittest.mock import MagicMock
 
+import ops.pebble
 import pytest
 
 from charmarr_lib.core import (
@@ -25,7 +26,9 @@ def mock_container():
 def test_sync_failure_raises(mock_container):
     """Container exec failure raises RecyclarrError."""
     mock_process = MagicMock()
-    mock_process.wait_output.side_effect = Exception("sync failed")
+    mock_process.wait_output.side_effect = ops.pebble.ExecError(
+        command=["recyclarr"], exit_code=1, stdout=None, stderr="sync failed"
+    )
     mock_container.exec.return_value = mock_process
 
     with pytest.raises(RecyclarrError, match="sync failed"):

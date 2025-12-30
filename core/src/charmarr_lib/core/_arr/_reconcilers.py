@@ -4,10 +4,12 @@
 """Reconcilers for synchronizing *arr application state with Juju relations."""
 
 import logging
-from typing import Any
+from typing import Any, Protocol
+
+from pydantic import ValidationError
 
 from charmarr_lib.core._arr._arr_client import ArrApiClient
-from charmarr_lib.core._arr._base_client import BaseArrApiClient
+from charmarr_lib.core._arr._base_client import ArrApiError, BaseArrApiClient
 from charmarr_lib.core._arr._config_builders import (
     ApplicationConfigBuilder,
     DownloadClientConfigBuilder,
@@ -21,6 +23,26 @@ from charmarr_lib.core.interfaces import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class NamedItem(Protocol):
+    """Protocol for items with id and name attributes."""
+
+    @property
+    def id(self) -> int: ...
+
+    @property
+    def name(self) -> str: ...
+
+
+class ReconcileOperations[T: NamedItem](Protocol):
+    """Protocol defining operations needed for generic reconciliation."""
+
+    def get_current(self) -> list[T]: ...
+    def get_full(self, item_id: int) -> dict[str, Any]: ...
+    def delete(self, item_id: int) -> None: ...
+    def add(self, config: dict[str, Any]) -> Any: ...
+    def update(self, item_id: int, config: dict[str, Any]) -> Any: ...
 
 
 def _extract_field_value(fields: list[dict[str, Any]], field_name: str) -> Any:
@@ -57,6 +79,87 @@ _DOWNLOAD_CLIENT_KEYS = ["enable", "protocol", "implementation", "configContract
 _APPLICATION_KEYS = ["syncLevel", "implementation", "configContract"]
 
 
+def _reconcile_items[T: NamedItem](
+    ops: ReconcileOperations[T],
+    desired_configs: dict[str, dict[str, Any]],
+    comparison_keys: list[str],
+    item_type_name: str,
+) -> None:
+    """Generic reconciliation of *arr API items.
+
+    Args:
+        ops: Operations for interacting with the API
+        desired_configs: Mapping of item name to desired configuration
+        comparison_keys: Top-level keys to compare for update detection
+        item_type_name: Human-readable name for logging (e.g., "download client")
+    """
+    current = ops.get_current()
+    current_by_name = {item.name: item for item in current}
+
+    for name, current_item in current_by_name.items():
+        if name not in desired_configs:
+            logger.info("Removing %s: %s", item_type_name, name)
+            ops.delete(current_item.id)
+
+    for name, desired_config in desired_configs.items():
+        try:
+            existing = current_by_name.get(name)
+            if existing:
+                existing_full = ops.get_full(existing.id)
+                if _needs_config_update(existing_full, desired_config, comparison_keys):
+                    logger.info("Updating %s: %s", item_type_name, name)
+                    ops.update(existing.id, desired_config)
+            else:
+                logger.info("Adding %s: %s", item_type_name, name)
+                ops.add(desired_config)
+        except (ArrApiError, ValidationError) as e:
+            logger.warning("Failed to reconcile %s %s: %s", item_type_name, name, e)
+
+
+class _DownloadClientOps:
+    """Operations adapter for download client reconciliation."""
+
+    def __init__(self, client: ArrApiClient) -> None:
+        self._client = client
+
+    def get_current(self):
+        return self._client.get_download_clients()
+
+    def get_full(self, item_id: int) -> dict[str, Any]:
+        return self._client.get_download_client(item_id)
+
+    def delete(self, item_id: int) -> None:
+        self._client.delete_download_client(item_id)
+
+    def add(self, config: dict[str, Any]):
+        return self._client.add_download_client(config)
+
+    def update(self, item_id: int, config: dict[str, Any]):
+        return self._client.update_download_client(item_id, config)
+
+
+class _ApplicationOps:
+    """Operations adapter for media manager application reconciliation."""
+
+    def __init__(self, client: MediaIndexerClient) -> None:
+        self._client = client
+
+    def get_current(self):
+        return self._client.get_applications()
+
+    def get_full(self, item_id: int) -> dict[str, Any]:
+        return self._client.get_application(item_id)
+
+    def delete(self, item_id: int) -> None:
+        self._client.delete_application(item_id)
+
+    def add(self, config: dict[str, Any]):
+        return self._client.add_application(config)
+
+    def update(self, item_id: int, config: dict[str, Any]):
+        return self._client.update_application(item_id, config)
+
+
 def reconcile_download_clients(
     api_client: ArrApiClient,
     desired_clients: list[DownloadClientProviderData],
@@ -77,9 +180,6 @@ def reconcile_download_clients(
         media_manager: The type of media manager (determines category field name)
         get_secret: Callback to retrieve secret content by ID
     """
-    current = api_client.get_download_clients()
-    current_by_name = {dc.name: dc for dc in current}
-
     desired_configs: dict[str, dict[str, Any]] = {}
     for provider in desired_clients:
         config = DownloadClientConfigBuilder.build(
@@ -90,24 +190,12 @@ def reconcile_download_clients(
         )
         desired_configs[provider.instance_name] = config
 
-    for name, current_dc in current_by_name.items():
-        if name not in desired_configs:
-            logger.info("Removing download client: %s", name)
-            api_client.delete_download_client(current_dc.id)
-
-    for name, desired_config in desired_configs.items():
-        try:
-            existing = current_by_name.get(name)
-            if existing:
-                existing_full = api_client.get_download_client(existing.id)
-                if _needs_config_update(existing_full, desired_config, _DOWNLOAD_CLIENT_KEYS):
-                    logger.info("Updating download client: %s", name)
-                    api_client.update_download_client(existing.id, desired_config)
-            else:
-                logger.info("Adding download client: %s", name)
-                api_client.add_download_client(desired_config)
-        except Exception as e:
-            logger.warning("Failed to reconcile download client %s: %s", name, e)
+    _reconcile_items(
+        _DownloadClientOps(api_client),
+        desired_configs,
+        _DOWNLOAD_CLIENT_KEYS,
+        "download client",
+    )
 
 
 def reconcile_media_manager_connections(
@@ -128,9 +216,6 @@ def reconcile_media_manager_connections(
         indexer_url: URL of the indexer instance (e.g., Prowlarr)
         get_secret: Callback to retrieve secret content by ID
     """
-    current = api_client.get_applications()
-    current_by_name = {app.name: app for app in current}
-
     desired_configs: dict[str, dict[str, Any]] = {}
     for requirer in desired_managers:
         config = ApplicationConfigBuilder.build(
@@ -140,24 +225,12 @@ def reconcile_media_manager_connections(
         )
         desired_configs[requirer.instance_name] = config
 
-    for name, current_app in current_by_name.items():
-        if name not in desired_configs:
-            logger.info("Removing media manager connection: %s", name)
-            api_client.delete_application(current_app.id)
-
-    for name, desired_config in desired_configs.items():
-        try:
-            existing = current_by_name.get(name)
-            if existing:
-                existing_full = api_client.get_application(existing.id)
-                if _needs_config_update(existing_full, desired_config, _APPLICATION_KEYS):
-                    logger.info("Updating media manager connection: %s", name)
-                    api_client.update_application(existing.id, desired_config)
-            else:
-                logger.info("Adding media manager connection: %s", name)
-                api_client.add_application(desired_config)
-        except Exception as e:
-            logger.warning("Failed to reconcile media manager connection %s: %s", name, e)
+    _reconcile_items(
+        _ApplicationOps(api_client),
+        desired_configs,
+        _APPLICATION_KEYS,
+        "media manager connection",
+    )
 
 
 def reconcile_root_folder(
