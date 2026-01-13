@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.9.0...charmarr-lib-core-v0.9.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* **core:** media manager requirer should publish to all related ([f8e3bda](https://github.com/charmarr/charmarr-lib/commit/f8e3bda4c0fce80876e6889d91e4bc58b4ac18df))
+
 ## [0.9.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.8.0...charmarr-lib-core-v0.9.0) (2025-12-31)
 
 
