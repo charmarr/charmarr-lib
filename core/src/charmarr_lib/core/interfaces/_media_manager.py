@@ -99,8 +99,8 @@ class MediaManagerRequirer(
         return MediaManagerProviderData
 
     def publish_data(self, data: MediaManagerRequirerData) -> None:
-        """Publish requirer data to the relation."""
-        self._publish_to_single_relation(data)
+        """Publish requirer data to all relations."""
+        self._publish_to_all_relations(data)
 
     def get_providers(self) -> list[MediaManagerProviderData]:
         """Get data from all connected provider applications."""
