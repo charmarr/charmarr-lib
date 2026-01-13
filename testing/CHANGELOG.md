@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.0...charmarr-lib-testing-v0.7.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* use wait for active idle responsibly ([ae06cbd](https://github.com/charmarr/charmarr-lib/commit/ae06cbdd032b209e964fb6f5cadafaa67942a460))
+
 ## [0.7.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.6.0...charmarr-lib-testing-v0.7.0) (2025-12-30)
 
 
