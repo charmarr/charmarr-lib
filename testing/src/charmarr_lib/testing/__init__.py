@@ -21,6 +21,7 @@ from charmarr_lib.testing._juju import (
     grant_secret_to_app,
     vpn_creds_available,
     wait_for_active_idle,
+    wait_for_app_status,
 )
 from charmarr_lib.testing._k8s import (
     ContainerInfo,
@@ -53,4 +54,5 @@ __all__ = [
     "run_multimeter_action",
     "vpn_creds_available",
     "wait_for_active_idle",
+    "wait_for_app_status",
 ]

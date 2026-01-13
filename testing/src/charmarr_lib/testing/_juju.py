@@ -42,6 +42,42 @@ def wait_for_active_idle(
         juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 5)
 
 
+def wait_for_app_status(
+    juju: jubilant.Juju,
+    app: str,
+    status: str,
+    message_contains: str | None = None,
+    timeout: int = 60 * 10,
+) -> None:
+    """Wait for a specific application to reach an expected status.
+
+    Use this instead of wait_for_active_idle when other apps may be in
+    unexpected states (e.g., plex blocked without claim token).
+
+    Args:
+        juju: Juju instance.
+        app: Application name to wait for.
+        status: Expected status (e.g., "active", "blocked", "waiting").
+        message_contains: Optional substring to match in status message.
+        timeout: Maximum time to wait in seconds (default: 10 minutes).
+    """
+
+    def check_status(juju_status: jubilant.Status) -> bool:
+        app_status = juju_status.apps.get(app)
+        if not app_status:
+            return False
+        unit = app_status.units.get(f"{app}/0")
+        if not unit:
+            return False
+        if unit.workload_status.current != status:
+            return False
+        if message_contains:
+            return message_contains.lower() in (unit.workload_status.message or "").lower()
+        return True
+
+    juju.wait(check_status, delay=5, successes=3, timeout=timeout)
+
+
 def get_app_relation_data(
     juju: jubilant.Juju,
     unit: str,
@@ -192,7 +228,7 @@ def ensure_related(
     """Ensure an application is related via a specific endpoint.
 
     Checks if the relation exists first to avoid duplicate integration.
-    Waits for active/idle after integrating.
+    Waits for agents to be idle after integrating.
 
     Args:
         juju: Juju instance.
@@ -205,4 +241,4 @@ def ensure_related(
     if app_status and endpoint in app_status.relations:
         return
     juju.integrate(f"{app}:{endpoint}", provider_endpoint)
-    wait_for_active_idle(juju)
+    juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 5)

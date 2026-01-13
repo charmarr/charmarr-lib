@@ -8,7 +8,7 @@ import os
 import jubilant
 from pytest_bdd import given, parsers
 
-from charmarr_lib.testing import ensure_related, wait_for_active_idle
+from charmarr_lib.testing import wait_for_app_status
 
 ISTIO_CHANNEL = os.environ.get("CHARMARR_ISTIO_CHANNEL", "2/edge")
 
@@ -20,7 +20,7 @@ def deploy_istio(juju: jubilant.Juju) -> None:
     if "istio-k8s" in status.apps:
         return
     juju.deploy("istio-k8s", app="istio-k8s", channel=ISTIO_CHANNEL, trust=True)
-    wait_for_active_idle(juju)
+    wait_for_app_status(juju, "istio-k8s", "active")
 
 
 @given("istio-beacon is deployed")
@@ -30,7 +30,7 @@ def deploy_istio_beacon(juju: jubilant.Juju) -> None:
     if "istio-beacon" in status.apps:
         return
     juju.deploy("istio-beacon-k8s", app="istio-beacon", channel=ISTIO_CHANNEL, trust=True)
-    wait_for_active_idle(juju)
+    wait_for_app_status(juju, "istio-beacon", "active")
 
 
 @given("istio-ingress is deployed")
@@ -40,16 +40,26 @@ def deploy_istio_ingress(juju: jubilant.Juju) -> None:
     if "istio-ingress" in status.apps:
         return
     juju.deploy("istio-ingress-k8s", app="istio-ingress", channel=ISTIO_CHANNEL, trust=True)
-    wait_for_active_idle(juju)
+    wait_for_app_status(juju, "istio-ingress", "active")
 
 
 @given(parsers.parse("{app} is related to istio-beacon via service-mesh"))
 def relate_app_to_mesh(juju: jubilant.Juju, app: str) -> None:
     """Integrate an app with istio-beacon via service-mesh relation."""
-    ensure_related(juju, app, "service-mesh", "istio-beacon:service-mesh")
+    status = juju.status()
+    app_status = status.apps.get(app)
+    if app_status and "service-mesh" in app_status.relations:
+        return
+    juju.integrate(f"{app}:service-mesh", "istio-beacon:service-mesh")
+    wait_for_app_status(juju, "istio-beacon", "active")
 
 
 @given(parsers.parse("{app} is related to istio-ingress via istio-ingress-route"))
 def relate_app_to_ingress(juju: jubilant.Juju, app: str) -> None:
     """Integrate an app with istio-ingress via istio-ingress-route relation."""
-    ensure_related(juju, app, "istio-ingress-route", "istio-ingress:istio-ingress-route")
+    status = juju.status()
+    app_status = status.apps.get(app)
+    if app_status and "istio-ingress-route" in app_status.relations:
+        return
+    juju.integrate(f"{app}:istio-ingress-route", "istio-ingress:istio-ingress-route")
+    wait_for_app_status(juju, "istio-ingress", "active")
