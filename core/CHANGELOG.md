@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.9.1...charmarr-lib-core-v0.10.0) (2026-01-15)
+
+
+### Features
+
+* **core:** adds a clear data method to storage interface ([2b05e7d](https://github.com/charmarr/charmarr-lib/commit/2b05e7dfc96eac47cf8281a0b8003a3ed5903ced))
+* **core:** adds a storage permission check utility ([1466213](https://github.com/charmarr/charmarr-lib/commit/146621360c97a0c21c0302af8a44fa324242def4))
+
 ## [0.9.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.9.0...charmarr-lib-core-v0.9.1) (2026-01-13)
 
 
