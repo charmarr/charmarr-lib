@@ -6,7 +6,7 @@
 from typing import Any
 
 from lightkube import ApiError, Client
-from lightkube.types import PatchType
+from lightkube.types import CascadeType, PatchType
 from tenacity import (
     retry,
     retry_if_exception,
@@ -160,7 +160,7 @@ class K8sResourceManager:
         resource_type: type[Any],
         name: str,
         namespace: str | None = None,
-        cascade: bool = True,
+        cascade: CascadeType = CascadeType.BACKGROUND,
     ) -> bool:
         """Delete a resource.
 
@@ -170,7 +170,7 @@ class K8sResourceManager:
             resource_type: The resource type to delete.
             name: Resource name.
             namespace: Namespace (required for namespaced resources).
-            cascade: If True (default), delete dependent resources (e.g., Pods for Jobs).
+            cascade: Cascade deletion type. Defaults to BACKGROUND.
 
         Returns:
             True if the resource was deleted, False if it didn't exist.
@@ -179,12 +179,11 @@ class K8sResourceManager:
             ApiError: For errors other than 404 (not found), after retries.
         """
         try:
-            propagation_policy = "Background" if cascade else "Orphan"
-            self._client.delete(  # type: ignore[call-overload]
+            self._client.delete(
                 resource_type,
                 name,
                 namespace=namespace,
-                propagation_policy=propagation_policy,
+                cascade=cascade,
             )
             return True
         except ApiError as e:
