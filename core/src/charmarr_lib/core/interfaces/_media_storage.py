@@ -52,6 +52,15 @@ class MediaStorageProvider(
         """Publish provider data to all relations."""
         self._publish_to_all_relations(data)
 
+    def clear_data(self) -> None:
+        """Clear provider data from all relations."""
+        if not self._charm.unit.is_leader():
+            return
+
+        for relation in self._charm.model.relations.get(self._relation_name, []):
+            if "config" in relation.data[self._charm.app]:
+                del relation.data[self._charm.app]["config"]
+
     def get_connected_apps(self) -> list[str]:
         """Get list of connected application names (for logging/metrics)."""
         return [r.instance_name for r in self._get_all_remote_app_data()]
