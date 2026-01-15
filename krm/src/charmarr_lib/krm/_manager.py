@@ -160,6 +160,7 @@ class K8sResourceManager:
         resource_type: type[Any],
         name: str,
         namespace: str | None = None,
+        cascade: bool = True,
     ) -> bool:
         """Delete a resource.
 
@@ -169,6 +170,7 @@ class K8sResourceManager:
             resource_type: The resource type to delete.
             name: Resource name.
             namespace: Namespace (required for namespaced resources).
+            cascade: If True (default), delete dependent resources (e.g., Pods for Jobs).
 
         Returns:
             True if the resource was deleted, False if it didn't exist.
@@ -177,7 +179,13 @@ class K8sResourceManager:
             ApiError: For errors other than 404 (not found), after retries.
         """
         try:
-            self._client.delete(resource_type, name, namespace=namespace)  # type: ignore[arg-type]
+            propagation_policy = "Background" if cascade else "Orphan"
+            self._client.delete(  # type: ignore[call-overload]
+                resource_type,
+                name,
+                namespace=namespace,
+                propagation_policy=propagation_policy,
+            )
             return True
         except ApiError as e:
             if e.status.code == 404:
