@@ -50,11 +50,16 @@ from charmarr_lib.core._k8s import (
     reconcile_hardware_transcoding,
     reconcile_storage_volume,
 )
+from charmarr_lib.core._variant import (
+    get_default_trash_profiles,
+    get_root_folder,
+)
 from charmarr_lib.core.constants import (
     MEDIA_MANAGER_IMPLEMENTATIONS,
     MEDIA_TYPE_DOWNLOAD_PATHS,
 )
 from charmarr_lib.core.enums import (
+    ContentVariant,
     DownloadClient,
     DownloadClientType,
     MediaIndexer,
@@ -71,6 +76,7 @@ __all__ = [
     "ArrApiError",
     "ArrApiResponseError",
     "BaseArrApiClient",
+    "ContentVariant",
     "DownloadClient",
     "DownloadClientConfigBuilder",
     "DownloadClientResponse",
@@ -95,6 +101,8 @@ __all__ = [
     "delete_permission_check_job",
     "ensure_pebble_user",
     "generate_api_key",
+    "get_default_trash_profiles",
+    "get_root_folder",
     "get_secret_rotation_policy",
     "is_hardware_device_mounted",
     "is_storage_mounted",

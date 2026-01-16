@@ -8,7 +8,7 @@ from typing import ClassVar
 from ops import CharmBase
 from scenario import Context, Relation, State
 
-from charmarr_lib.core.enums import MediaManager, RequestManager
+from charmarr_lib.core.enums import ContentVariant, MediaManager, RequestManager
 from charmarr_lib.core.interfaces import (
     MediaManagerProvider,
     MediaManagerProviderData,
@@ -68,8 +68,8 @@ def test_provider_publish_and_get_requirers():
                 QualityProfile(id=1, name="HD-Bluray+WEB"),
                 QualityProfile(id=2, name="UHD-Bluray+WEB"),
             ],
-            root_folders=["/data/media/movies"],
-            is_4k=True,
+            root_folders=["/data/media/movies-uhd"],
+            variant=ContentVariant.UHD,
         )
         mgr.charm.provider.publish_data(provider_data)
         state_out = mgr.run()
@@ -94,7 +94,7 @@ def test_requirer_get_providers_with_quality_profiles():
             QualityProfile(id=2, name="Remux-1080p"),
         ],
         root_folders=["/data/media/movies", "/data/media/movies-remux"],
-        is_4k=False,
+        variant=ContentVariant.STANDARD,
     )
     relation = Relation(
         endpoint="media-manager",
@@ -108,7 +108,7 @@ def test_requirer_get_providers_with_quality_profiles():
     assert len(providers) == 1
     retrieved = providers[0]
     assert retrieved.instance_name == "radarr-1080p"
-    assert retrieved.is_4k is False
+    assert retrieved.variant == ContentVariant.STANDARD
     assert len(retrieved.quality_profiles) == 2
     assert retrieved.quality_profiles[0].name == "HD-Bluray+WEB"
     assert len(retrieved.root_folders) == 2
@@ -126,7 +126,7 @@ def test_requirer_get_multiple_providers():
         instance_name="radarr-1080p",
         quality_profiles=[QualityProfile(id=1, name="HD-Bluray+WEB")],
         root_folders=["/data/media/movies"],
-        is_4k=False,
+        variant=ContentVariant.STANDARD,
     )
     sonarr_data = MediaManagerProviderData(
         api_url="http://sonarr:8989",

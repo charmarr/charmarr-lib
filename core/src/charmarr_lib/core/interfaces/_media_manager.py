@@ -8,7 +8,7 @@ from typing import Any
 from ops import EventBase, EventSource, ObjectEvents
 from pydantic import BaseModel, Field
 
-from charmarr_lib.core.enums import MediaManager, RequestManager
+from charmarr_lib.core.enums import ContentVariant, MediaManager, RequestManager
 from charmarr_lib.core.interfaces._base import (
     EventObservingMixin,
     RelationInterfaceBase,
@@ -39,9 +39,9 @@ class MediaManagerProviderData(BaseModel):
         description="Available quality profiles from the media manager"
     )
     root_folders: list[str] = Field(description="Available root folder paths")
-    is_4k: bool = Field(
-        default=False,
-        description="Whether this instance handles 4K content (set via charm config)",
+    variant: ContentVariant = Field(
+        default=ContentVariant.STANDARD,
+        description="Content variant: standard (catch-all), 4k, or anime",
     )
 
 

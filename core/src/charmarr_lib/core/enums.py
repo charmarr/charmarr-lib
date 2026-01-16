@@ -41,3 +41,15 @@ class RequestManager(str, Enum):
 
     OVERSEERR = "overseerr"
     JELLYSEERR = "jellyseerr"
+
+
+class ContentVariant(str, Enum):
+    """Content variant for media manager instances.
+
+    STANDARD is the default catch-all for any content type.
+    UHD and ANIME are specialized variants with dedicated folders.
+    """
+
+    STANDARD = "standard"
+    UHD = "4k"
+    ANIME = "anime"
