@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.10.0...charmarr-lib-core-v0.11.0) (2026-01-16)
+
+
+### Features
+
+* **core:** switch is-4k to variant in media manager itnerface ([775df3c](https://github.com/charmarr/charmarr-lib/commit/775df3c62afca1f5b45add70671f9742cad08ea7))
+
 ## [0.10.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.9.1...charmarr-lib-core-v0.10.0) (2026-01-15)
 
 
