@@ -1,17 +1,19 @@
 # Copyright 2025 The Charmarr Project
 # See LICENSE file for licensing details.
 
-"""Pebble user creation utilities for LinuxServer.io images.
+"""Pebble utilities for Juju charms.
+
+Provides utilities for:
+- User creation for LinuxServer.io images (PUID/PGID handling)
+- Config file change detection via content hashing
 
 LinuxServer.io images use s6-overlay which dynamically creates users based on
 PUID/PGID environment variables. When bypassing s6 to run applications directly
 via Pebble's user-id/group-id options, users must exist in /etc/passwd and
 /etc/group beforehand.
-
-This module provides utilities to create the necessary user/group entries
-before Pebble starts the workload.
 """
 
+import hashlib
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -60,3 +62,41 @@ def ensure_pebble_user(
         changed = True
 
     return changed
+
+
+def get_config_hash(container: "Container", config_path: str) -> str:
+    """Get a short hash of a config file for change detection.
+
+    This hash can be included in a Pebble layer's environment variables
+    to trigger automatic service restarts when the config file changes. (Thanks Mike Thamm!)
+    Pebble's replan() detects layer changes and restarts affected services.
+
+    Example usage in a charm::
+
+        def _build_pebble_layer(self) -> ops.pebble.LayerDict:
+            return {
+                "services": {
+                    "myservice": {
+                        "command": "/app/run",
+                        "environment": {
+                            # Pebble restarts service when this changes
+                            "__CONFIG_HASH": get_config_hash(
+                                self._container, "/config/app.ini"
+                            ),
+                        },
+                    }
+                }
+            }
+
+    Args:
+        container: The ops.Container to read from.
+        config_path: Path to the config file in the container.
+
+    Returns:
+        A 16-character hex hash of the file content, or empty string
+        if the file doesn't exist.
+    """
+    if not container.exists(config_path):
+        return ""
+    content = container.pull(config_path).read()
+    return hashlib.sha256(content.encode()).hexdigest()[:16]

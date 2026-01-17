@@ -3,7 +3,7 @@
 
 """Juju-specific utilities for Charmarr charms."""
 
-from charmarr_lib.core._juju._pebble import ensure_pebble_user
+from charmarr_lib.core._juju._pebble import ensure_pebble_user, get_config_hash
 from charmarr_lib.core._juju._reconciler import (
     all_events,
     observe_events,
@@ -15,6 +15,7 @@ from charmarr_lib.core._juju._secrets import get_secret_rotation_policy
 __all__ = [
     "all_events",
     "ensure_pebble_user",
+    "get_config_hash",
     "get_secret_rotation_policy",
     "observe_events",
     "reconcilable_events_k8s",

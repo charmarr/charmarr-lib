@@ -33,6 +33,7 @@ from charmarr_lib.core._arr import (
 from charmarr_lib.core._juju import (
     all_events,
     ensure_pebble_user,
+    get_config_hash,
     get_secret_rotation_policy,
     observe_events,
     reconcilable_events_k8s,
@@ -101,6 +102,7 @@ __all__ = [
     "delete_permission_check_job",
     "ensure_pebble_user",
     "generate_api_key",
+    "get_config_hash",
     "get_default_trash_profiles",
     "get_root_folder",
     "get_secret_rotation_policy",
