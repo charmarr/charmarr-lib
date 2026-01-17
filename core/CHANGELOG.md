@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.11.0...charmarr-lib-core-v0.12.0) (2026-01-17)
+
+
+### Features
+
+* **core:** adds a config hash utility for pebble replan triggers ([ad12de7](https://github.com/charmarr/charmarr-lib/commit/ad12de74aa413e31c5027eeab12ea96bf0f54c6b))
+
 ## [0.11.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.10.0...charmarr-lib-core-v0.11.0) (2026-01-16)
 
 
