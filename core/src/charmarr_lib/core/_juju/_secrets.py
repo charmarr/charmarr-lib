@@ -40,5 +40,5 @@ def sync_secret_rotation_policy(secret: ops.Secret, config_value: str) -> None:
     desired_policy = get_secret_rotation_policy(config_value)
     current_info = secret.get_info()
 
-    if current_info.rotation != desired_policy:
+    if current_info.rotation != desired_policy and desired_policy is not None:
         secret.set_info(rotate=desired_policy)
