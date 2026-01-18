@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.12.1...charmarr-lib-core-v0.12.2) (2026-01-18)
+
+
+### Bug Fixes
+
+* **core:** fixes secret rotation handling utility ([fde8106](https://github.com/charmarr/charmarr-lib/commit/fde8106c1cd80dfc405b7caccf87aaf26ddbd78c))
+
 ## [0.12.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.12.0...charmarr-lib-core-v0.12.1) (2026-01-18)
 
 
