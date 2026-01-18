@@ -10,7 +10,10 @@ from charmarr_lib.core._juju._reconciler import (
     reconcilable_events_k8s,
     reconcilable_events_k8s_workloadless,
 )
-from charmarr_lib.core._juju._secrets import get_secret_rotation_policy
+from charmarr_lib.core._juju._secrets import (
+    get_secret_rotation_policy,
+    sync_secret_rotation_policy,
+)
 
 __all__ = [
     "all_events",
@@ -20,4 +23,5 @@ __all__ = [
     "observe_events",
     "reconcilable_events_k8s",
     "reconcilable_events_k8s_workloadless",
+    "sync_secret_rotation_policy",
 ]

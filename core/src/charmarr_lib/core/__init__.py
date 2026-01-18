@@ -38,6 +38,7 @@ from charmarr_lib.core._juju import (
     observe_events,
     reconcilable_events_k8s,
     reconcilable_events_k8s_workloadless,
+    sync_secret_rotation_policy,
 )
 from charmarr_lib.core._k8s import (
     K8sResourceManager,
@@ -119,6 +120,7 @@ __all__ = [
     "reconcile_media_manager_connections",
     "reconcile_root_folder",
     "reconcile_storage_volume",
+    "sync_secret_rotation_policy",
     "sync_trash_profiles",
     "update_api_key",
 ]
