@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/charmarr-charmarr-lib.png" width="350" alt="Charmarr Lib">
-</p>
-
 <h1 align="center">Charmarr Libraries</h1>
 
 <p align="center">

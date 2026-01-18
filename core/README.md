@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="../assets/charmarr-charmarr-lib.png" width="350" alt="Charmarr Lib">
-</p>
-
 <h1 align="center">charmarr-lib-core</h1>
 
 Core charm libraries for Charmarr media automation.
