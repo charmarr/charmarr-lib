@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.12.0...charmarr-lib-core-v0.12.1) (2026-01-18)
+
+
+### Bug Fixes
+
+* **core:** adds a sync secret rotation util to fix secret rot config ([aa5b822](https://github.com/charmarr/charmarr-lib/commit/aa5b8225c77c33250138156f1e1a8271dfceb716))
+
 ## [0.12.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.11.0...charmarr-lib-core-v0.12.0) (2026-01-17)
 
 
