@@ -27,8 +27,7 @@ def wait_for_active_idle(
 ) -> None:
     """Wait for Juju models to be active and idle.
 
-    Tolerates transient errors during reconciliation - if there's a real
-    error, the wait will timeout.
+    Raises WaitError immediately if any unit enters error state.
 
     Args:
         jujus: Single Juju instance or list of instances to wait for.
@@ -38,7 +37,13 @@ def wait_for_active_idle(
         jujus = [jujus]
 
     for juju in jujus:
-        juju.wait(jubilant.all_active, delay=5, successes=3, timeout=timeout)
+        juju.wait(
+            jubilant.all_active,
+            error=jubilant.any_error,
+            delay=5,
+            successes=3,
+            timeout=timeout,
+        )
         juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 5)
 
 
