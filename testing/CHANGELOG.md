@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.1...charmarr-lib-testing-v0.7.2) (2026-03-08)
+
+
+### Bug Fixes
+
+* **testing:** raise immediately on error ([e4a5574](https://github.com/charmarr/charmarr-lib/commit/e4a5574d9efb4ae59953aee582c30585b84d7aa4))
+
 ## [0.7.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.0...charmarr-lib-testing-v0.7.1) (2026-01-13)
 
 
