@@ -40,7 +40,7 @@ class RequestManager(str, Enum):
     """Request management applications."""
 
     OVERSEERR = "overseerr"
-    JELLYSEERR = "jellyseerr"
+    SEERR = "seerr"
 
 
 class ContentVariant(str, Enum):
