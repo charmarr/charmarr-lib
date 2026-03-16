@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.12.2...charmarr-lib-core-v0.13.0) (2026-03-16)
+
+
+### Features
+
+* **core:** adds seerr enum ([4e8debd](https://github.com/charmarr/charmarr-lib/commit/4e8debd0f6b1120ae2ac216b92c8a174f690b3d3))
+
 ## [0.12.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.12.1...charmarr-lib-core-v0.12.2) (2026-01-18)
 
 
