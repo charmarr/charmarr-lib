@@ -52,6 +52,10 @@ from charmarr_lib.core._k8s import (
     reconcile_hardware_transcoding,
     reconcile_storage_volume,
 )
+from charmarr_lib.core._topology import (
+    CharmarrTopology,
+    CharmarrTopologyRelation,
+)
 from charmarr_lib.core._variant import (
     get_default_trash_profiles,
     get_root_folder,
@@ -78,6 +82,8 @@ __all__ = [
     "ArrApiError",
     "ArrApiResponseError",
     "BaseArrApiClient",
+    "CharmarrTopology",
+    "CharmarrTopologyRelation",
     "ContentVariant",
     "DownloadClient",
     "DownloadClientConfigBuilder",
