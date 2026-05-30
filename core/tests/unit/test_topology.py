@@ -11,7 +11,13 @@ import pytest
 from ops import CharmBase
 from scenario import Context, Relation, State
 
-from charmarr_lib.core import CharmarrTopology, CharmarrTopologyRelation
+from charmarr_lib.core import (
+    CharmarrChargedTopology,
+    CharmarrTopology,
+    CharmarrTopologyRelation,
+    MetricFamily,
+    MetricSample,
+)
 
 
 class TopologyCharm(CharmBase):
@@ -127,6 +133,94 @@ def test_daemon_spawn_is_idempotent(
     assert fake_popen.call_args.kwargs["start_new_session"] is True
     assert (_isolate_tmp_paths / "server.py").exists()
     assert (_isolate_tmp_paths / "topology.pid").read_text() == "12345"
+
+
+class ChargedTopologyCharm(CharmBase):
+    """Wraps CharmarrChargedTopology with a callback that emits two extra families."""
+
+    META: ClassVar[dict[str, object]] = {
+        "name": "storage",
+        "provides": {"media-storage": {"interface": "media_storage"}},
+    }
+
+    def __init__(self, framework):
+        super().__init__(framework)
+        self.topology = CharmarrChargedTopology(
+            self,
+            relations=[
+                CharmarrTopologyRelation("media-storage", role="provides", required=False),
+            ],
+            extra_exposition=self._extras,
+        )
+
+    def _extras(self) -> list[MetricFamily]:
+        return [
+            MetricFamily(
+                name="charmarr_storage_consumers_total",
+                help="Number of consumers currently bound via media-storage",
+                samples=[MetricSample(value=2)],
+            ),
+            MetricFamily(
+                name="charmarr_storage_pvc_mounted",
+                help="Is the PVC mounted on each consumer (1/0)",
+                samples=[
+                    MetricSample(labels={"consumer": "radarr"}, value=1),
+                    MetricSample(labels={"consumer": "sonarr"}, value=0),
+                ],
+            ),
+        ]
+
+
+def test_charged_topology_appends_extra_families(_isolate_tmp_paths: Path, fake_popen: MagicMock):
+    """Subclass emits topology + extra families on the same endpoint."""
+    ctx = Context(ChargedTopologyCharm, meta=ChargedTopologyCharm.META)
+    with ctx(ctx.on.update_status(), State(leader=True)) as mgr:
+        mgr.charm.topology.reconcile()
+        mgr.run()
+
+    text = (_isolate_tmp_paths / "topology.prom").read_text()
+
+    assert "charmarr_relation_bound{" in text
+    assert "# HELP charmarr_storage_consumers_total" in text
+    assert "# TYPE charmarr_storage_consumers_total gauge" in text
+    assert "charmarr_storage_consumers_total 2" in text
+    assert 'charmarr_storage_pvc_mounted{consumer="radarr"} 1' in text
+    assert 'charmarr_storage_pvc_mounted{consumer="sonarr"} 0' in text
+
+
+def test_charged_topology_swallows_callback_errors(
+    _isolate_tmp_paths: Path, fake_popen: MagicMock
+):
+    """If the callback raises, topology metrics still ship and the daemon still starts."""
+
+    class BrokenCharm(CharmBase):
+        META: ClassVar[dict[str, object]] = {
+            "name": "broken",
+            "provides": {"media-storage": {"interface": "media_storage"}},
+        }
+
+        def __init__(self, framework):
+            super().__init__(framework)
+            self.topology = CharmarrChargedTopology(
+                self,
+                relations=[
+                    CharmarrTopologyRelation("media-storage", role="provides", required=False),
+                ],
+                extra_exposition=self._boom,
+            )
+
+        def _boom(self) -> list[MetricFamily]:
+            raise RuntimeError("storage state unavailable")
+
+    ctx = Context(BrokenCharm, meta=BrokenCharm.META)
+    with ctx(ctx.on.update_status(), State(leader=True)) as mgr:
+        mgr.charm.topology.reconcile()
+        mgr.run()
+
+    text = (_isolate_tmp_paths / "topology.prom").read_text()
+    assert "charmarr_relation_bound{" in text
+    assert "charmarr_storage" not in text
+    assert fake_popen.call_count == 1
 
 
 def test_daemon_respawns_when_pid_stale(

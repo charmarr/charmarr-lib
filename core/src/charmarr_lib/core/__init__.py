@@ -53,8 +53,11 @@ from charmarr_lib.core._k8s import (
     reconcile_storage_volume,
 )
 from charmarr_lib.core._topology import (
+    CharmarrChargedTopology,
     CharmarrTopology,
     CharmarrTopologyRelation,
+    MetricFamily,
+    MetricSample,
 )
 from charmarr_lib.core._variant import (
     get_default_trash_profiles,
@@ -82,6 +85,7 @@ __all__ = [
     "ArrApiError",
     "ArrApiResponseError",
     "BaseArrApiClient",
+    "CharmarrChargedTopology",
     "CharmarrTopology",
     "CharmarrTopologyRelation",
     "ContentVariant",
@@ -95,6 +99,8 @@ __all__ = [
     "MediaIndexerClient",
     "MediaManager",
     "MediaManagerConnection",
+    "MetricFamily",
+    "MetricSample",
     "PermissionCheckResult",
     "PermissionCheckStatus",
     "QualityProfileResponse",

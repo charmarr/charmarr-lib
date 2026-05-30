@@ -21,6 +21,34 @@ both the workload exporter sidecar AND this topology endpoint.
 The helper does not observe any Juju events itself - lifecycle is owned by
 the charm's reconciler, which already runs on the right set of events
 (pebble_ready, config_changed, install, all relation events, etc.).
+
+--------------------------------------------------------------------------
+Why not a Pebble-managed service? (preempting the obvious question)
+--------------------------------------------------------------------------
+
+We considered making this a Pebble service. We cannot:
+
+1. The CHARM container's Pebble plan (where this helper runs) is reserved
+   for Juju's dispatch and is not user-extensible. Charm code can only add
+   layers to containers declared in `containers:` in charmcraft.yaml.
+2. Workloadless charms (e.g. `charmarr-storage-k8s`) have NO container at
+   all to host a Pebble service. The charm container is the only option.
+3. Pebble has no built-in static-file / Prometheus exposition server.
+   See https://github.com/canonical/pebble/issues/118 (open, "needs design",
+   filed 2022). Even that issue targets Pebble's own health-check state,
+   not arbitrary application metrics.
+
+So the alternative would be: declare a dedicated `charmarr-topology`
+sidecar container in every charmarr charm, image pinned, Pebble layer
+pushed. That adds ~20MB of RAM per pod x N charms and one Renovate-tracked
+image per charm for what is structurally a 25-line static file server. Not
+worth the cost.
+
+If Pebble #118 lands, or if Juju ever exposes the charm container's
+Pebble for user layers, swap the implementation here. The PUBLIC API
+(`CharmarrTopology`, `reconcile()`, `scrape_job`, `port`) is intentionally
+small and stays unchanged - the charms that consume this helper do not
+need to be touched.
 """
 
 import dataclasses
@@ -28,9 +56,12 @@ import logging
 import os
 import subprocess
 import sys
+from collections.abc import Callable, Iterable
 from pathlib import Path
+from typing import Literal
 
 import ops
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +73,30 @@ class CharmarrTopologyRelation:
     name: str
     role: str  # "requires" or "provides"
     required: bool
+
+
+class MetricSample(BaseModel):
+    """A single Prometheus metric sample - labels + value."""
+
+    labels: dict[str, str] = Field(default_factory=dict)
+    value: float
+
+
+class MetricFamily(BaseModel):
+    """A Prometheus metric family - one HELP, one TYPE, N samples.
+
+    The helper formats this into valid Prometheus exposition format. Use this
+    via `CharmarrChargedTopology` when a charm wants to ship arbitrary
+    charm-state metrics alongside topology on the same daemon endpoint.
+    """
+
+    name: str
+    help: str
+    type: Literal["gauge", "counter"] = "gauge"
+    samples: list[MetricSample] = Field(default_factory=list)
+
+
+ExtraExpositionCallback = Callable[[], Iterable[MetricFamily]]
 
 
 class CharmarrTopology(ops.Object):
@@ -118,21 +173,29 @@ class CharmarrTopology(ops.Object):
         self._ensure_server_running()
 
     def _write_metrics_file(self) -> None:
-        lines: list[str] = [
-            "# HELP charmarr_relation_bound Is the named relation currently bound (1) or unbound (0)",
-            "# TYPE charmarr_relation_bound gauge",
-        ]
+        lines = list(self._exposition_lines())
+        self.METRICS_FILE.write_text("\n".join(lines) + "\n")
+
+    def _exposition_lines(self) -> Iterable[str]:
+        """Yield every line written to the metrics file.
+
+        Subclasses override this to inject additional series after the
+        standard topology output.
+        """
+        yield from self._topology_lines()
+
+    def _topology_lines(self) -> Iterable[str]:
+        yield "# HELP charmarr_relation_bound Is the named relation currently bound (1) or unbound (0)"
+        yield "# TYPE charmarr_relation_bound gauge"
         for rel in self._relations:
             bound = 1 if self._charm.model.relations.get(rel.name) else 0
             labels = (
                 f'relation="{rel.name}",role="{rel.role}",required="{str(rel.required).lower()}"'
             )
-            lines.append(f"charmarr_relation_bound{{{labels}}} {bound}")
+            yield f"charmarr_relation_bound{{{labels}}} {bound}"
 
-        lines.append(
-            "# HELP charmarr_relation_edge One series per bound (relation, from_app, to_app) peer"
-        )
-        lines.append("# TYPE charmarr_relation_edge gauge")
+        yield "# HELP charmarr_relation_edge One series per bound (relation, from_app, to_app) peer"
+        yield "# TYPE charmarr_relation_edge gauge"
         for rel in self._relations:
             for relation in self._charm.model.relations.get(rel.name, []):
                 if rel.role == "provides":
@@ -140,9 +203,7 @@ class CharmarrTopology(ops.Object):
                 else:
                     from_app, to_app = self._charm.app.name, relation.app.name
                 labels = f'relation="{rel.name}",from_app="{from_app}",to_app="{to_app}"'
-                lines.append(f"charmarr_relation_edge{{{labels}}} 1")
-
-        self.METRICS_FILE.write_text("\n".join(lines) + "\n")
+                yield f"charmarr_relation_edge{{{labels}}} 1"
 
     def _ensure_server_running(self) -> None:
         pid = self._read_pid()
@@ -152,6 +213,12 @@ class CharmarrTopology(ops.Object):
         if not self.SERVER_SCRIPT.exists():
             self.SERVER_SCRIPT.write_text(_TOPOLOGY_SERVER_SCRIPT)
 
+        # `start_new_session=True` is LOAD-BEARING: it places the child in a
+        # new session/process group so it is detached from the charm hook's
+        # process group. Without it, the daemon dies when the hook exits and
+        # topology metrics vanish until the next reconcile event. Do NOT
+        # remove this when refactoring (e.g. to asyncio or contextmanager-
+        # based patterns) without a replacement detach mechanism.
         proc = subprocess.Popen(
             [sys.executable, str(self.SERVER_SCRIPT), str(self._port), str(self.METRICS_FILE)],
             stdout=subprocess.DEVNULL,
@@ -176,6 +243,73 @@ class CharmarrTopology(ops.Object):
         except (OSError, ProcessLookupError):
             return False
         return True
+
+
+class CharmarrChargedTopology(CharmarrTopology):
+    """CharmarrTopology + arbitrary charm-state metrics on the same daemon.
+
+    Use this when a charm wants to publish charm-internal state alongside
+    the standard topology metrics on a single `metrics-endpoint` relation.
+    Example: `charmarr-storage-k8s` ships consumer mount state and hardware
+    device mount state via `extra_exposition`, served on the same port (9099)
+    as the topology metrics.
+
+    The callback returns an iterable of `MetricFamily` models. Each call is
+    wrapped: any exception is logged and topology metrics still ship for
+    that cycle - the extras are silently dropped.
+
+    Example::
+
+        self._topology = CharmarrChargedTopology(
+            self,
+            relations=[
+                CharmarrTopologyRelation(
+                    "media-storage", role="provides", required=False
+                ),
+            ],
+            extra_exposition=self._build_storage_gauges,
+        )
+
+        def _build_storage_gauges(self) -> list[MetricFamily]:
+            return [
+                MetricFamily(
+                    name="charmarr_storage_consumers_total",
+                    help="Number of consumers currently bound via media-storage",
+                    samples=[MetricSample(value=len(self._get_consumers()))],
+                ),
+            ]
+    """
+
+    def __init__(
+        self,
+        charm: ops.CharmBase,
+        relations: list[CharmarrTopologyRelation],
+        extra_exposition: ExtraExpositionCallback,
+        port: int = CharmarrTopology.DEFAULT_PORT,
+    ):
+        super().__init__(charm, relations, port)
+        self._extra_exposition = extra_exposition
+
+    def _exposition_lines(self) -> Iterable[str]:
+        yield from super()._exposition_lines()
+        try:
+            families = list(self._extra_exposition())
+        except Exception:
+            logger.exception("extra_exposition callback raised; topology metrics still shipped")
+            return
+        for family in families:
+            yield from _format_metric_family(family)
+
+
+def _format_metric_family(family: MetricFamily) -> Iterable[str]:
+    yield f"# HELP {family.name} {family.help}"
+    yield f"# TYPE {family.name} {family.type}"
+    for sample in family.samples:
+        if sample.labels:
+            label_str = ",".join(f'{k}="{v}"' for k, v in sample.labels.items())
+            yield f"{family.name}{{{label_str}}} {sample.value}"
+        else:
+            yield f"{family.name} {sample.value}"
 
 
 _TOPOLOGY_SERVER_SCRIPT = '''#!/usr/bin/env python3
