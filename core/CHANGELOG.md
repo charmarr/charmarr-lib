@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.13.0...charmarr-lib-core-v0.14.0) (2026-05-30)
+
+
+### Features
+
+* **core:** adds CharmarrTopology emitter ([027945b](https://github.com/charmarr/charmarr-lib/commit/027945b00cc50f38cec53ea6a74e306637c4b81a))
+
 ## [0.13.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.12.2...charmarr-lib-core-v0.13.0) (2026-03-16)
 
 
