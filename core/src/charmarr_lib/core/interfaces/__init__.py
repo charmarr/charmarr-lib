@@ -3,6 +3,12 @@
 
 """Juju relation interface implementations for Charmarr."""
 
+from charmarr_lib.core.interfaces._crowsnest import (
+    CrowsnestChangedEvent,
+    CrowsnestProvider,
+    CrowsnestProviderData,
+    CrowsnestRequirer,
+)
 from charmarr_lib.core.interfaces._download_client import (
     DownloadClientChangedEvent,
     DownloadClientProvider,
@@ -46,6 +52,10 @@ from charmarr_lib.core.interfaces._media_storage import (
 )
 
 __all__ = [
+    "CrowsnestChangedEvent",
+    "CrowsnestProvider",
+    "CrowsnestProviderData",
+    "CrowsnestRequirer",
     "DownloadClientChangedEvent",
     "DownloadClientProvider",
     "DownloadClientProviderData",
