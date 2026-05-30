@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.14.1...charmarr-lib-core-v0.15.0) (2026-05-30)
+
+
+### Features
+
+* **core:** adds CharmarrChargedTopology for custom charmarr charm metrics exporting ([3740199](https://github.com/charmarr/charmarr-lib/commit/37401994e224eb1eef6d3f5b0ee4c1959c62e98e))
+
 ## [0.14.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.14.0...charmarr-lib-core-v0.14.1) (2026-05-30)
 
 
