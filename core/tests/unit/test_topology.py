@@ -81,7 +81,9 @@ def test_metrics_output_shape(_isolate_tmp_paths: Path, fake_popen: MagicMock):
             ),
         ],
     )
-    ctx.run(ctx.on.update_status(), state_in)
+    with ctx(ctx.on.update_status(), state_in) as mgr:
+        mgr.charm.topology.reconcile()
+        mgr.run()
 
     text = (_isolate_tmp_paths / "topology.prom").read_text()
 
@@ -112,21 +114,19 @@ def test_metrics_output_shape(_isolate_tmp_paths: Path, fake_popen: MagicMock):
 def test_daemon_spawn_is_idempotent(
     _isolate_tmp_paths: Path, fake_popen: MagicMock, monkeypatch: pytest.MonkeyPatch
 ):
-    """First event spawns; a subsequent event with a live pid does NOT respawn."""
+    """First reconcile spawns; a subsequent reconcile with a live pid does NOT respawn."""
+    monkeypatch.setattr("charmarr_lib.core._topology.os.kill", lambda *_a, **_k: None)
     ctx = Context(TopologyCharm, meta=TopologyCharm.META)
-    state = State(leader=True)
 
-    state_after_first = ctx.run(ctx.on.update_status(), state)
+    with ctx(ctx.on.update_status(), State(leader=True)) as mgr:
+        mgr.charm.topology.reconcile()
+        mgr.charm.topology.reconcile()
+        mgr.run()
 
     assert fake_popen.call_count == 1
     assert fake_popen.call_args.kwargs["start_new_session"] is True
     assert (_isolate_tmp_paths / "server.py").exists()
     assert (_isolate_tmp_paths / "topology.pid").read_text() == "12345"
-
-    monkeypatch.setattr("charmarr_lib.core._topology.os.kill", lambda *_a, **_k: None)
-    ctx.run(ctx.on.update_status(), state_after_first)
-
-    assert fake_popen.call_count == 1
 
 
 def test_daemon_respawns_when_pid_stale(
@@ -141,7 +141,9 @@ def test_daemon_respawns_when_pid_stale(
     monkeypatch.setattr("charmarr_lib.core._topology.os.kill", _dead)
 
     ctx = Context(TopologyCharm, meta=TopologyCharm.META)
-    ctx.run(ctx.on.update_status(), State(leader=True))
+    with ctx(ctx.on.update_status(), State(leader=True)) as mgr:
+        mgr.charm.topology.reconcile()
+        mgr.run()
 
     assert fake_popen.call_count == 1
     assert (_isolate_tmp_paths / "topology.pid").read_text() == "12345"

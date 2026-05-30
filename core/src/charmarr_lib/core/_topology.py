@@ -3,8 +3,9 @@
 
 """Topology publisher for charmarr-crowsnest-k8s consumption.
 
-Charms instantiate `CharmarrTopology` with the list of optional/required
-relations they want to surface. On every relation event the helper:
+Charms instantiate `CharmarrTopology` with the list of relations they want
+to surface, then call `topology.reconcile()` from their own reconcile method.
+On each reconcile the helper:
 
 1. Writes a Prometheus exposition file under /tmp with two metric families:
    - `charmarr_relation_bound{relation, role, required}` (0/1) - is the relation bound at all
@@ -16,6 +17,10 @@ relations they want to surface. On every relation event the helper:
 The charm registers the helper's `scrape_job` with its MetricsEndpointProvider
 and adds the topology port to its mesh UnitPolicy. Prometheus/otelcol scrapes
 both the workload exporter sidecar AND this topology endpoint.
+
+The helper does not observe any Juju events itself - lifecycle is owned by
+the charm's reconciler, which already runs on the right set of events
+(pebble_ready, config_changed, install, all relation events, etc.).
 """
 
 import dataclasses
@@ -43,8 +48,8 @@ class CharmarrTopology(ops.Object):
     """Publishes charmarr_relation_bound + charmarr_relation_edge metrics.
 
     Hosted from inside the charm container - which always has Python - via a
-    detached subprocess. The metrics file is regenerated on every relation
-    event; the HTTP server reads it on each scrape.
+    detached subprocess. The metrics file is regenerated on each `reconcile()`
+    call; the HTTP server reads it on each scrape.
 
     Example::
 
@@ -72,6 +77,11 @@ class CharmarrTopology(ops.Object):
             relation="metrics-endpoint",
             ports=[METRICS_PORT, self._topology.port],
         )
+
+        # From the charm reconciler:
+        def _reconcile(self, _event):
+            ...
+            self._topology.reconcile()
     """
 
     DEFAULT_PORT = 9099
@@ -90,14 +100,6 @@ class CharmarrTopology(ops.Object):
         self._relations = list(relations)
         self._port = port
 
-        for rel in self._relations:
-            self._charm.framework.observe(charm.on[rel.name].relation_changed, self._on_event)
-            self._charm.framework.observe(charm.on[rel.name].relation_broken, self._on_event)
-
-        # Make sure the daemon respawns after pod restart or charm upgrade.
-        self._charm.framework.observe(charm.on.upgrade_charm, self._on_event)
-        self._charm.framework.observe(charm.on.update_status, self._on_event)
-
     @property
     def port(self) -> int:
         return self._port
@@ -107,7 +109,11 @@ class CharmarrTopology(ops.Object):
         """Return the static scrape job spec to add to MetricsEndpointProvider."""
         return {"static_configs": [{"targets": [f"*:{self._port}"]}]}
 
-    def _on_event(self, _event: ops.EventBase) -> None:
+    def reconcile(self) -> None:
+        """Refresh the metrics file and ensure the daemon is running.
+
+        Idempotent. Safe to call from any reconcile path.
+        """
         self._write_metrics_file()
         self._ensure_server_running()
 
