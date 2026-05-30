@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.14.0...charmarr-lib-core-v0.14.1) (2026-05-30)
+
+
+### Miscellaneous Chores
+
+* **core:** CharmarrTopology follows the reconciler pattern ([bdc4703](https://github.com/charmarr/charmarr-lib/commit/bdc4703c45498a7e7e0934152e74b21056d46dc6))
+
 ## [0.14.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.13.0...charmarr-lib-core-v0.14.0) (2026-05-30)
 
 
