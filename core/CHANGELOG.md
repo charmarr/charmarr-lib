@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.15.0...charmarr-lib-core-v0.16.0) (2026-05-30)
+
+
+### Features
+
+* **core:** adds an interface for Crowsnest ([d0b0b36](https://github.com/charmarr/charmarr-lib/commit/d0b0b360334f3f5d2e223f8b27b78b1d380e8a0a))
+
 ## [0.15.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.14.1...charmarr-lib-core-v0.15.0) (2026-05-30)
 
 
