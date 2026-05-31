@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.2...charmarr-lib-testing-v0.7.3) (2026-05-31)
+
+
+### Bug Fixes
+
+* **testing:** mesh step def wait for integrated charms ([a50c974](https://github.com/charmarr/charmarr-lib/commit/a50c974af13fc46c9224afdb4dca3c578690061c))
+
 ## [0.7.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.1...charmarr-lib-testing-v0.7.2) (2026-03-08)
 
 
