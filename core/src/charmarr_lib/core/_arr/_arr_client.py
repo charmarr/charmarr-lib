@@ -52,6 +52,19 @@ class HostConfigResponse(BaseModel):
     url_base: str | None = Field(default=None, alias="urlBase")
 
 
+class QueueItemResponse(BaseModel):
+    """A single item from the *arr download queue."""
+
+    model_config = RESPONSE_MODEL_CONFIG
+
+    id: int
+    title: str = ""
+    size: float = 0.0
+    sizeleft: float = 0.0
+    status: str = ""
+    protocol: str = ""
+
+
 class ArrApiClient(BaseArrApiClient):
     """API client for Radarr, Sonarr, and Lidarr (/api/v3).
 
@@ -152,3 +165,15 @@ class ArrApiClient(BaseArrApiClient):
     def get_host_config(self) -> HostConfigResponse:
         """Get host configuration with typed response."""
         return self._get_validated("/config/host", HostConfigResponse)
+
+    # Queue
+
+    def get_queue(self) -> list[QueueItemResponse]:
+        """Get currently queued download items.
+
+        Returns the `records` array from `/queue`, parsed into typed models.
+        Extra fields are tolerated so radarr/sonarr schema drift is harmless.
+        """
+        response = self._get("/queue")
+        records = response.get("records", []) if isinstance(response, dict) else []
+        return [QueueItemResponse.model_validate(r) for r in records]

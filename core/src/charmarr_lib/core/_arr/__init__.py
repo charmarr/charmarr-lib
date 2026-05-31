@@ -8,6 +8,7 @@ from charmarr_lib.core._arr._arr_client import (
     DownloadClientResponse,
     HostConfigResponse,
     QualityProfileResponse,
+    QueueItemResponse,
     RootFolderResponse,
 )
 from charmarr_lib.core._arr._base_client import (
@@ -56,6 +57,7 @@ __all__ = [
     "MediaIndexerClient",
     "MediaManagerConnection",
     "QualityProfileResponse",
+    "QueueItemResponse",
     "RecyclarrError",
     "RootFolderResponse",
     "SecretGetter",
