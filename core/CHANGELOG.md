@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.16.0...charmarr-lib-core-v0.17.0) (2026-05-31)
+
+
+### Features
+
+* **core:** add a queue item response in the arr api ([30c45ee](https://github.com/charmarr/charmarr-lib/commit/30c45ee3844e2f77e77f821c70a87c71dcd3accb))
+
 ## [0.16.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.15.0...charmarr-lib-core-v0.16.0) (2026-05-30)
 
 
