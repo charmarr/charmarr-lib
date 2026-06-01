@@ -36,6 +36,23 @@ class CrowsnestProviderData(BaseModel):
             "Typically `http://<app>.<model>.svc.cluster.local:9099/metrics`."
         ),
     )
+    app_name: str = Field(
+        default="",
+        description=(
+            "The local Juju application name of the publishing charm. Lets "
+            "crowsnest distinguish same-named apps that live in different "
+            "models (e.g. a local `plex` and a cross-model `plex`)."
+        ),
+    )
+    model_name: str = Field(
+        default="",
+        description=(
+            "The local Juju model name of the publishing charm. Used by "
+            "crowsnest to compose stable per-app node IDs and to surface "
+            "the source model in hover details when fleet members span "
+            "multiple models via cross-model relations."
+        ),
+    )
 
 
 class CrowsnestChangedEvent(EventBase):
@@ -52,7 +69,15 @@ class CrowsnestProvider(RelationInterfaceBase[CrowsnestProviderData, BaseModel])
         return BaseModel
 
     def publish_data(self, data: CrowsnestProviderData) -> None:
-        """Publish provider data to every related crowsnest unit."""
+        """Publish provider data to every related crowsnest unit.
+
+        `app_name` and `model_name` are auto-populated from the charm if the
+        caller left them blank, so providers only need to supply `topology_url`.
+        """
+        if not data.app_name:
+            data = data.model_copy(update={"app_name": self._charm.app.name})
+        if not data.model_name:
+            data = data.model_copy(update={"model_name": self._charm.model.name})
         self._publish_to_all_relations(data)
 
 
