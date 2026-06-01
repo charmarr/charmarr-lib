@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.17.0...charmarr-lib-core-v0.18.0) (2026-06-01)
+
+
+### Features
+
+* **core:** charmarr topology emits app and model names for cmr ([cd655bb](https://github.com/charmarr/charmarr-lib/commit/cd655bb467b6ddddea4e2e98c0be4c7d86a8f793))
+
 ## [0.17.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.16.0...charmarr-lib-core-v0.17.0) (2026-05-31)
 
 
