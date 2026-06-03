@@ -22,7 +22,7 @@ jobs:
       vpn--release_created: ${{ steps.release.outputs['vpn--release_created'] }}
       testing--release_created: ${{ steps.release.outputs['testing--release_created'] }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           config-file: release-please-config.json
@@ -40,7 +40,7 @@ jobs:
     environment: pypi-core
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
       - name: Build package
@@ -57,7 +57,7 @@ jobs:
     environment: pypi-krm
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
       - name: Build package
@@ -74,7 +74,7 @@ jobs:
     environment: pypi-vpn
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
       - name: Build package
@@ -91,7 +91,7 @@ jobs:
     environment: pypi-testing
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
       - name: Build package
