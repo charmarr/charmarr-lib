@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 members = [
     "charmarr-lib-core",
     "charmarr-lib-krm",
+    "charmarr-lib-netbird",
     "charmarr-lib-testing",
     "charmarr-lib-vpn",
 ]
@@ -134,6 +135,37 @@ dev = [
 requires-dist = [
     { name = "lightkube", specifier = ">=0.15" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
+    { name = "tenacity", specifier = ">=8.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
+name = "charmarr-lib-netbird"
+source = { editable = "netbird" }
+dependencies = [
+    { name = "httpx" },
+    { name = "ops" },
+    { name = "pydantic" },
+    { name = "tenacity" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8" },
+    { name = "ops", specifier = ">=2.23.1" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
