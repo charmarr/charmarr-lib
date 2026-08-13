@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.3...charmarr-lib-testing-v0.7.4) (2026-08-13)
+
+
+### Bug Fixes
+
+* **testing:** update istio channel ([7ed9e86](https://github.com/charmarr/charmarr-lib/commit/7ed9e8639b1da7b4052670dd97ff3c13f781cc47))
+
 ## [0.7.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.2...charmarr-lib-testing-v0.7.3) (2026-05-31)
 
 
