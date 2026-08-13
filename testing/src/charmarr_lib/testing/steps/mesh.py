@@ -10,7 +10,7 @@ from pytest_bdd import given, parsers
 
 from charmarr_lib.testing import wait_for_app_status
 
-ISTIO_CHANNEL = os.environ.get("CHARMARR_ISTIO_CHANNEL", "2/edge")
+ISTIO_CHANNEL = os.environ.get("CHARMARR_ISTIO_CHANNEL", "dev/edge")
 
 
 @given("istio-k8s is deployed")
