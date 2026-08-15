@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.4...charmarr-lib-testing-v0.7.5) (2026-08-15)
+
+
+### Bug Fixes
+
+* **testing:** remove forced active status ([afb2d62](https://github.com/charmarr/charmarr-lib/commit/afb2d62e4e25b41fc36a900567a88123ed9d1109))
+
 ## [0.7.4](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.3...charmarr-lib-testing-v0.7.4) (2026-08-13)
 
 
