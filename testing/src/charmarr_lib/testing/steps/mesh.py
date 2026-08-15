@@ -52,7 +52,7 @@ def relate_app_to_mesh(juju: jubilant.Juju, app: str) -> None:
         return
     juju.integrate(f"{app}:service-mesh", "istio-beacon:service-mesh")
     wait_for_app_status(juju, "istio-beacon", "active")
-    wait_for_app_status(juju, app, "active")
+    juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 10)
 
 
 @given(parsers.parse("{app} is related to istio-ingress via istio-ingress-route"))
@@ -64,4 +64,4 @@ def relate_app_to_ingress(juju: jubilant.Juju, app: str) -> None:
         return
     juju.integrate(f"{app}:istio-ingress-route", "istio-ingress:istio-ingress-route")
     wait_for_app_status(juju, "istio-ingress", "active")
-    wait_for_app_status(juju, app, "active")
+    juju.wait(jubilant.all_agents_idle, delay=5, timeout=60 * 10)
