@@ -22,7 +22,9 @@ def deploy_storage_from_charmhub(juju: jubilant.Juju) -> None:
         return
     config = {
         "backend-type": "storage-class",
-        "storage-class": "microk8s-hostpath",
+        "storage-class": "csi-rawfile-default",
+        # csi-rawfile-default is RWO only, and the charm defaults to ReadWriteMany.
+        "access-mode": "ReadWriteOnce",
         "size": "1Gi",
         "puid": "1000",
         "pgid": "1000",
