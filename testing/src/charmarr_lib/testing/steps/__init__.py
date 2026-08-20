@@ -9,6 +9,7 @@ Usage in charm conftest.py:
         "charmarr_lib.testing.steps.multimeter",
         "charmarr_lib.testing.steps.storage",
         "charmarr_lib.testing.steps.gluetun",
+        "charmarr_lib.testing.steps.ingress",
         "charmarr_lib.testing.steps.mesh",
     ]
 """

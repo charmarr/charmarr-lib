@@ -4,7 +4,6 @@
 """Kubernetes resource helpers using multimeter actions."""
 
 import logging
-import re
 from typing import Any
 
 import jubilant
@@ -52,23 +51,3 @@ def get_container_info(juju: jubilant.Juju, namespace: str, name: str) -> Contai
         containers=containers_str.split(",") if containers_str else [],
         init_containers=init_str.split(",") if init_str else [],
     )
-
-
-def get_ingress_ip(juju: jubilant.Juju, app: str = "istio-ingress") -> str | None:
-    """Parse IP address from an ingress app's status message.
-
-    Expects status message format: "Serving at X.X.X.X"
-    """
-    status = juju.status()
-    app_status = status.apps.get(app)
-    if not app_status:
-        logger.warning("App %s not found in status", app)
-        return None
-
-    message = app_status.app_status.message or ""
-    match = re.search(r"Serving at (\d+\.\d+\.\d+\.\d+)", message)
-    if match:
-        return match.group(1)
-
-    logger.warning("Could not parse IP from status message: %s", message)
-    return None

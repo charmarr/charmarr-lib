@@ -11,6 +11,7 @@ from charmarr_lib.testing._arr import (
 )
 from charmarr_lib.testing._charmcraft import get_oci_resources
 from charmarr_lib.testing._http import HttpResponse, http_from_unit, http_request
+from charmarr_lib.testing._ingress import get_ingress_ip, get_ingress_url
 from charmarr_lib.testing._juju import (
     assert_app_active,
     create_vpn_secret,
@@ -26,7 +27,6 @@ from charmarr_lib.testing._juju import (
 from charmarr_lib.testing._k8s import (
     ContainerInfo,
     get_container_info,
-    get_ingress_ip,
     run_multimeter_action,
 )
 from charmarr_lib.testing._terraform import TFManager
@@ -45,6 +45,7 @@ __all__ = [
     "get_arr_credentials",
     "get_container_info",
     "get_ingress_ip",
+    "get_ingress_url",
     "get_node_cidr",
     "get_oci_resources",
     "grant_secret_to_app",
