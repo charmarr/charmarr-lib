@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.5...charmarr-lib-testing-v0.8.0) (2026-08-20)
+
+
+### Features
+
+* **testing:** adds traefik ingress testing utils ([13b195d](https://github.com/charmarr/charmarr-lib/commit/13b195d1727bf8caab804f6bc487b8c7c57acb06))
+
 ## [0.7.5](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.4...charmarr-lib-testing-v0.7.5) (2026-08-15)
 
 
