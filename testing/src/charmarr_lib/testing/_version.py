@@ -3,4 +3,4 @@
 
 """Version for charmarr-testing package."""
 
-__version__ = "0.7.5"  # x-release-please-version
+__version__ = "0.8.0"  # x-release-please-version
