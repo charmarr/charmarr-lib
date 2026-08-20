@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.8.0...charmarr-lib-testing-v0.8.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* **testing:** update storage steps for ck8s ([534d8cf](https://github.com/charmarr/charmarr-lib/commit/534d8cf6d3d6217f4581d8c5509f162d0c3e454e))
+
 ## [0.8.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-testing-v0.7.5...charmarr-lib-testing-v0.8.0) (2026-08-20)
 
 
