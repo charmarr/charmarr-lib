@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.18.0...charmarr-lib-core-v0.19.0) (2026-08-21)
+
+
+### Features
+
+* **core:** adds media server url and password secret id to relation data ([b612702](https://github.com/charmarr/charmarr-lib/commit/b6127020d771b0bcba3af79fb189acfe62bda7b8))
+
 ## [0.18.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.17.0...charmarr-lib-core-v0.18.0) (2026-06-01)
 
 
