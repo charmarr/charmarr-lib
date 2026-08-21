@@ -8,6 +8,7 @@ from typing import Any
 from ops import EventBase, EventSource, ObjectEvents
 from pydantic import BaseModel, Field
 
+from charmarr_lib.core.enums import MediaServer
 from charmarr_lib.core.interfaces._base import (
     EventObservingMixin,
     RelationInterfaceBase,
@@ -22,6 +23,14 @@ class MediaServerProviderData(BaseModel):
     web_url: str | None = Field(
         default=None,
         description="Optional web UI URL for 'Open in Plex' links",
+    )
+    server: MediaServer | None = Field(
+        default=None,
+        description="Which media server application this is",
+    )
+    credentials_secret_id: str | None = Field(
+        default=None,
+        description="Juju secret ID holding administrator username and password",
     )
 
 

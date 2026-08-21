@@ -36,6 +36,13 @@ class DownloadClientType(str, Enum):
     USENET = "usenet"
 
 
+class MediaServer(str, Enum):
+    """Media server applications."""
+
+    PLEX = "plex"
+    JELLYFIN = "jellyfin"
+
+
 class RequestManager(str, Enum):
     """Request management applications."""
 

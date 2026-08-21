@@ -74,6 +74,7 @@ from charmarr_lib.core.enums import (
     DownloadClientType,
     MediaIndexer,
     MediaManager,
+    MediaServer,
     RequestManager,
 )
 
@@ -100,6 +101,7 @@ __all__ = [
     "MediaIndexerClient",
     "MediaManager",
     "MediaManagerConnection",
+    "MediaServer",
     "MetricFamily",
     "MetricSample",
     "PermissionCheckResult",
