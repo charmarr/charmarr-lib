@@ -21,6 +21,7 @@ from lightkube.models.batch_v1 import JobSpec
 from lightkube.models.core_v1 import (
     Container,
     PersistentVolumeClaimVolumeSource,
+    PodSecurityContext,
     PodSpec,
     PodTemplateSpec,
     SecurityContext,
@@ -115,6 +116,10 @@ def _build_permission_check_job(
                     restartPolicy="Never",
                     containers=[container],
                     volumes=[volume],
+                    # Block-backed CSI volumes are provisioned root-owned, so a
+                    # non-root pod cannot write until kubelet chowns the root to
+                    # the fsGroup on mount.
+                    securityContext=PodSecurityContext(fsGroup=pgid),
                 ),
             ),
         ),
