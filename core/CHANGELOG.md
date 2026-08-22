@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.19.0...charmarr-lib-core-v0.19.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* **core:** fixes permission check for block storage backends ([8ad6af3](https://github.com/charmarr/charmarr-lib/commit/8ad6af3c742ffecc5efbe7ebdc43e863edc2c8cc))
+
 ## [0.19.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.18.0...charmarr-lib-core-v0.19.0) (2026-08-21)
 
 
