@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.5.0...charmarr-lib-vpn-v0.6.0) (2026-08-23)
+
+
+### Features
+
+* **vpn:** enables canonical k8s support ([009b896](https://github.com/charmarr/charmarr-lib/commit/009b896db8724ea08cff3166cb68783d12c8ac19))
+
 ## [0.5.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.4.0...charmarr-lib-vpn-v0.5.0) (2025-12-24)
 
 
