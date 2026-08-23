@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.6.0...charmarr-lib-vpn-v0.6.1) (2026-08-23)
+
+
+### Bug Fixes
+
+* **vpn:** fix network policy for ck8s ([06f24ec](https://github.com/charmarr/charmarr-lib/commit/06f24ecda90754264ac507dbea83bb94ca8f21f5))
+
 ## [0.6.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.5.0...charmarr-lib-vpn-v0.6.0) (2026-08-23)
 
 
