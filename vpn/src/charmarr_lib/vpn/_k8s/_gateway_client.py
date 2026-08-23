@@ -78,20 +78,16 @@ def _build_config_volume(configmap_name: str) -> Volume:
     )
 
 
-def _build_configmap_data(
-    dns_server_ip: str,
-    cluster_cidrs: str,
-    vxlan_id: int,
-    vxlan_ip_network: str,
-) -> dict[str, str]:
+def _build_configmap_data(data: VPNGatewayProviderData) -> dict[str, str]:
     """Build ConfigMap data for gateway client pod-gateway settings."""
-    cidrs_normalized = " ".join(c.strip() for c in cluster_cidrs.replace(",", " ").split())
+    cidrs_normalized = " ".join(c.strip() for c in data.cluster_cidrs.replace(",", " ").split())
     settings = "\n".join(
         [
-            f'K8S_DNS_IPS="{dns_server_ip}"',
+            f'K8S_DNS_IPS="{data.cluster_dns_ip}"',
             f'NOT_ROUTED_TO_GATEWAY_CIDRS="{cidrs_normalized}"',
-            f'VXLAN_ID="{vxlan_id}"',
-            f'VXLAN_IP_NETWORK="{vxlan_ip_network}"',
+            f'VXLAN_ID="{data.vxlan_id}"',
+            f'VXLAN_IP_NETWORK="{data.vxlan_ip_network}"',
+            f'VXLAN_PORT="{data.vxlan_port}"',
         ]
     )
     return {"settings.sh": settings}
@@ -113,9 +109,7 @@ def _reconcile_configmap(
             manager.delete(ConfigMap, configmap_name, namespace)
         return
 
-    cm_data = _build_configmap_data(
-        data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
-    )
+    cm_data = _build_configmap_data(data)
 
     configmap = ConfigMap(
         metadata=ObjectMeta(name=configmap_name, namespace=namespace),
@@ -210,9 +204,7 @@ def reconcile_gateway_client(
     _reconcile_configmap(manager, configmap_name, namespace, data)
 
     if data:
-        cm_data = _build_configmap_data(
-            data.cluster_dns_ip, data.cluster_cidrs, data.vxlan_id, data.vxlan_ip_network
-        )
+        cm_data = _build_configmap_data(data)
         config_hash = compute_config_hash(cm_data)
         patch = _build_patch(data, configmap_name, config_hash)
     else:

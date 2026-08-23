@@ -8,7 +8,11 @@ from typing import Any
 from ops import EventBase, EventSource, Object, ObjectEvents
 from pydantic import BaseModel, Field, ValidationError
 
-from charmarr_lib.vpn.constants import DEFAULT_VXLAN_ID, DEFAULT_VXLAN_IP_NETWORK
+from charmarr_lib.vpn.constants import (
+    DEFAULT_VXLAN_ID,
+    DEFAULT_VXLAN_IP_NETWORK,
+    DEFAULT_VXLAN_PORT,
+)
 
 
 class VPNGatewayProviderData(BaseModel):
@@ -30,6 +34,12 @@ class VPNGatewayProviderData(BaseModel):
     vxlan_ip_network: str = Field(
         default=DEFAULT_VXLAN_IP_NETWORK,
         description="First 3 octets of VXLAN subnet",
+    )
+    vxlan_port: int = Field(
+        default=DEFAULT_VXLAN_PORT,
+        ge=1,
+        le=65535,
+        description="VXLAN UDP destination port; must not collide with the CNI overlay port",
     )
     cluster_cidrs: str = Field(
         description="Comma-separated CIDRs to NOT route through VPN",

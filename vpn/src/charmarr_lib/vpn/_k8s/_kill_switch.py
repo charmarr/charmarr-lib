@@ -6,6 +6,7 @@
 Creates a NetworkPolicy that blocks all egress traffic EXCEPT:
 - Traffic to cluster pod CIDR (VXLAN-encapsulated traffic)
 - Traffic to cluster service CIDR (K8s services)
+- Traffic to any in-cluster pod, selected by namespace rather than CIDR
 - DNS traffic to kube-system (CoreDNS)
 
 This is Layer 1 of the two-layer VPN kill switch. If VXLAN routing fails
@@ -68,6 +69,15 @@ def _build_kill_switch_policy(config: KillSwitchConfig) -> NetworkPolicy:
                 to=[NetworkPolicyPeer(ipBlock=IPBlock(cidr=cidr))],
             )
         )
+
+    # Cilium resolves in-cluster destinations by security identity and does not
+    # match ipBlock CIDRs against pod IPs, so the pod-CIDR rule above is a no-op
+    # there and VXLAN traffic to the gateway is dropped. Selecting every namespace
+    # expresses the same intent by identity. Calico already covered this via
+    # ipBlock, so this grants nothing extra: external egress stays denied.
+    egress_rules.append(
+        NetworkPolicyEgressRule(to=[NetworkPolicyPeer(namespaceSelector=LabelSelector())])
+    )
 
     egress_rules.append(
         NetworkPolicyEgressRule(

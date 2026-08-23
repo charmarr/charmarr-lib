@@ -11,6 +11,11 @@ DEFAULT_VXLAN_ID = 42
 DEFAULT_VXLAN_IP_NETWORK = "172.16.0"
 DEFAULT_VXLAN_GATEWAY_FIRST_DYNAMIC_IP = 20
 
+# pod-gateway leaves dstport unset by default, which makes the kernel fall back to
+# 8472. That is the port Cilium and Flannel use for their own overlay, so the
+# tunnel silently blackholes. 4790 avoids both 8472 and Calico's 4789.
+DEFAULT_VXLAN_PORT = 4790
+
 # Gateway environment variable defaults
 DEFAULT_VPN_INTERFACE = "tun0"
 DEFAULT_VPN_BLOCK_OTHER_TRAFFIC = True

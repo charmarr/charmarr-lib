@@ -18,8 +18,10 @@ from charmarr_lib.vpn import (
     reconcile_gateway,
 )
 from charmarr_lib.vpn._k8s._gateway import (
+    _build_gateway_configmap_data,  # pyright: ignore[reportPrivateUsage]
     _build_patch,  # pyright: ignore[reportPrivateUsage]
 )
+from charmarr_lib.vpn.constants import DEFAULT_VXLAN_PORT
 
 # _build_patch
 
@@ -163,6 +165,17 @@ def test_reconcile_gateway_returns_message(manager, mock_client, provider_data):
 
     assert "gluetun" in result.message
     mock_client.patch.assert_called_once()
+
+
+# _build_gateway_configmap_data
+
+
+def test_gateway_configmap_sets_vxlan_port(provider_data):
+    """Gateway pins the VXLAN port so it cannot fall back to the CNI's 8472."""
+    data = _build_gateway_configmap_data(provider_data)
+
+    assert f'VXLAN_PORT="{DEFAULT_VXLAN_PORT}"' in data["settings.sh"]
+    assert DEFAULT_VXLAN_PORT not in (8472, 4789)
 
 
 # get_cluster_dns_ip

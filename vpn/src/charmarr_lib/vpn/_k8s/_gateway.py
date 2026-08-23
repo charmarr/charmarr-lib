@@ -113,6 +113,7 @@ def _build_gateway_configmap_data(data: VPNGatewayProviderData) -> dict[str, str
         [
             f'VXLAN_ID="{data.vxlan_id}"',
             f'VXLAN_IP_NETWORK="{data.vxlan_ip_network}"',
+            f'VXLAN_PORT="{data.vxlan_port}"',
             f'VXLAN_GATEWAY_FIRST_DYNAMIC_IP="{DEFAULT_VXLAN_GATEWAY_FIRST_DYNAMIC_IP}"',
         ]
     )

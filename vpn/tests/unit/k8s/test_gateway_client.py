@@ -13,24 +13,28 @@ from charmarr_lib.vpn._k8s._gateway_client import (
     _build_configmap_data,  # pyright: ignore[reportPrivateUsage]
     _build_patch,  # pyright: ignore[reportPrivateUsage]
 )
+from charmarr_lib.vpn.constants import DEFAULT_VXLAN_PORT
 
 # _build_configmap_data
 
 
-def test_build_configmap_data_creates_settings():
+def test_build_configmap_data_creates_settings(provider_data):
     """Creates settings.sh with correct content."""
-    data = _build_configmap_data(
-        dns_server_ip="10.152.183.10",
-        cluster_cidrs="10.1.0.0/16 10.152.183.0/24",
-        vxlan_id=50,
-        vxlan_ip_network="172.16.0",
-    )
+    data = _build_configmap_data(provider_data)
 
     assert "settings.sh" in data
     assert 'K8S_DNS_IPS="10.152.183.10"' in data["settings.sh"]
     assert 'NOT_ROUTED_TO_GATEWAY_CIDRS="10.1.0.0/16 10.152.183.0/24"' in data["settings.sh"]
-    assert 'VXLAN_ID="50"' in data["settings.sh"]
+    assert 'VXLAN_ID="42"' in data["settings.sh"]
     assert 'VXLAN_IP_NETWORK="172.16.0"' in data["settings.sh"]
+
+
+def test_build_configmap_data_sets_vxlan_port(provider_data):
+    """Client pins the VXLAN port so it cannot fall back to the CNI's 8472."""
+    data = _build_configmap_data(provider_data)
+
+    assert f'VXLAN_PORT="{DEFAULT_VXLAN_PORT}"' in data["settings.sh"]
+    assert DEFAULT_VXLAN_PORT not in (8472, 4789)
 
 
 # _build_patch

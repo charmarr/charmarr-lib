@@ -53,7 +53,7 @@ def test_build_policy_structure(config):
     assert policy.spec.podSelector.matchLabels == {"app.kubernetes.io/name": "qbittorrent"}
     assert policy.spec.policyTypes == ["Egress"]
     assert policy.spec.egress is not None
-    assert len(policy.spec.egress) == 3
+    assert len(policy.spec.egress) == 4
 
 
 def test_build_policy_egress_cidrs(config):
@@ -61,10 +61,31 @@ def test_build_policy_egress_cidrs(config):
     policy = _build_kill_switch_policy(config)
     assert policy.spec is not None
     assert policy.spec.egress is not None
-    cidr_rules = [r for r in policy.spec.egress if r.ports is None]
-    cidrs = [r.to[0].ipBlock.cidr for r in cidr_rules if r.to]  # type: ignore[union-attr]
+    cidrs = [
+        r.to[0].ipBlock.cidr  # type: ignore[union-attr]
+        for r in policy.spec.egress
+        if r.to and r.to[0].ipBlock is not None
+    ]
 
     assert set(cidrs) == {"10.42.0.0/16", "10.96.0.0/12"}
+
+
+def test_build_policy_allows_every_in_cluster_pod(config):
+    """Cilium ignores ipBlock for pod destinations, so an all-namespace rule is needed."""
+    policy = _build_kill_switch_policy(config)
+    assert policy.spec is not None
+    assert policy.spec.egress is not None
+
+    rules = [
+        r
+        for r in policy.spec.egress
+        if r.ports is None
+        and r.to
+        and r.to[0].namespaceSelector is not None
+        and not r.to[0].namespaceSelector.matchLabels
+    ]
+
+    assert len(rules) == 1
 
 
 def test_build_policy_egress_dns(config):
