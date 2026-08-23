@@ -21,6 +21,11 @@ GATEWAY_SIDECAR_CONTAINER_NAME = "gateway-sidecar"
 CLIENT_INIT_CONTAINER_NAME = "vpn-route-init"
 CLIENT_SIDECAR_CONTAINER_NAME = "vpn-route-sidecar"
 
+# Cluster DNS service discovery. The name is distribution-specific:
+# microk8s/kubeadm ship "kube-dns", Canonical K8s ships "coredns".
+DNS_NAMESPACE = "kube-system"
+CLUSTER_DNS_SERVICE_NAMES = ("kube-dns", "coredns")
+
 # Gateway service ports (pod-gateway DHCP and DNS)
 # These must be exposed via Juju set_ports() for client connectivity
 GATEWAY_DHCP_PORT = 67

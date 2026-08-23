@@ -6,6 +6,8 @@
 from unittest.mock import MagicMock
 
 import pytest
+from httpx import Response
+from lightkube.core.exceptions import ApiError
 from lightkube.models.core_v1 import ServiceSpec
 
 from charmarr_lib.vpn import (
@@ -166,23 +168,57 @@ def test_reconcile_gateway_returns_message(manager, mock_client, provider_data):
 # get_cluster_dns_ip
 
 
+def _not_found() -> ApiError:
+    return ApiError(response=Response(404, json={"code": 404, "message": "not found"}))
+
+
+def _svc(cluster_ip: str | None) -> MagicMock:
+    mock_svc = MagicMock()
+    mock_svc.spec = ServiceSpec(clusterIP=cluster_ip)
+    return mock_svc
+
+
 def test_get_cluster_dns_ip_returns_cluster_ip(manager, mock_client):
     """Returns the kube-dns service ClusterIP."""
-    mock_svc = MagicMock()
-    mock_svc.spec = ServiceSpec(clusterIP="10.152.183.10")
-    mock_client.get.return_value = mock_svc
+    mock_client.get.return_value = _svc("10.152.183.10")
 
     result = get_cluster_dns_ip(manager)
 
     assert result == "10.152.183.10"
-    mock_client.get.assert_called_once()
+    assert mock_client.get.call_args.args[1] == "kube-dns"
+
+
+def test_get_cluster_dns_ip_falls_back_to_coredns(manager, mock_client):
+    """Falls back to coredns when kube-dns is absent (Canonical K8s)."""
+    mock_client.get.side_effect = [_not_found(), _svc("10.152.183.249")]
+
+    result = get_cluster_dns_ip(manager)
+
+    assert result == "10.152.183.249"
+    assert mock_client.get.call_args.args[1] == "coredns"
+
+
+def test_get_cluster_dns_ip_raises_when_no_dns_service(manager, mock_client):
+    """Raises ValueError when no known DNS service exists."""
+    mock_client.get.side_effect = _not_found()
+
+    with pytest.raises(ValueError, match="No cluster DNS service found"):
+        get_cluster_dns_ip(manager)
+
+
+def test_get_cluster_dns_ip_reraises_non_404(manager, mock_client):
+    """Propagates API errors other than 404."""
+    mock_client.get.side_effect = ApiError(
+        response=Response(403, json={"code": 403, "message": "forbidden"})
+    )
+
+    with pytest.raises(ApiError):
+        get_cluster_dns_ip(manager)
 
 
 def test_get_cluster_dns_ip_raises_on_no_cluster_ip(manager, mock_client):
-    """Raises ValueError when kube-dns has no ClusterIP."""
-    mock_svc = MagicMock()
-    mock_svc.spec = ServiceSpec(clusterIP=None)
-    mock_client.get.return_value = mock_svc
+    """Raises ValueError when the DNS service has no ClusterIP."""
+    mock_client.get.return_value = _svc(None)
 
     with pytest.raises(ValueError, match="no ClusterIP"):
         get_cluster_dns_ip(manager)

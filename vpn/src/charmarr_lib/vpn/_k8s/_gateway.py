@@ -15,6 +15,7 @@ environment variables alone are not sufficient.
 
 from typing import Any
 
+from lightkube import ApiError
 from lightkube.models.core_v1 import (
     Capabilities,
     ConfigMapVolumeSource,
@@ -31,7 +32,9 @@ from lightkube.resources.core_v1 import ConfigMap, Service
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
 from charmarr_lib.vpn._k8s._utils import compute_config_hash
 from charmarr_lib.vpn.constants import (
+    CLUSTER_DNS_SERVICE_NAMES,
     DEFAULT_VXLAN_GATEWAY_FIRST_DYNAMIC_IP,
+    DNS_NAMESPACE,
     GATEWAY_INIT_CONTAINER_NAME,
     GATEWAY_SIDECAR_CONTAINER_NAME,
     POD_GATEWAY_IMAGE,
@@ -209,24 +212,39 @@ def reconcile_gateway(
 
 
 def get_cluster_dns_ip(manager: K8sResourceManager) -> str:
-    """Get the cluster DNS server IP from kube-dns service.
+    """Get the cluster DNS server IP.
 
-    Discovers the ClusterIP of the kube-dns service in kube-system namespace.
+    Discovers the ClusterIP of the cluster DNS service in kube-system. The
+    service name is distribution-specific: microk8s and upstream kubeadm use
+    ``kube-dns``, Canonical K8s uses ``coredns``.
+
     This is needed for pod-gateway client settings to resolve the gateway hostname.
 
     Args:
         manager: K8sResourceManager instance.
 
     Returns:
-        The kube-dns service ClusterIP (e.g., "10.152.183.10").
+        The cluster DNS service ClusterIP (e.g., "10.152.183.10").
 
     Raises:
-        ApiError: If kube-dns service doesn't exist or can't be accessed.
-        ValueError: If kube-dns service has no ClusterIP.
+        ApiError: If no known DNS service exists or can't be accessed.
+        ValueError: If the DNS service has no ClusterIP.
     """
-    svc = manager.get(Service, "kube-dns", "kube-system")
+    for name in CLUSTER_DNS_SERVICE_NAMES:
+        try:
+            svc = manager.get(Service, name, DNS_NAMESPACE)
+        except ApiError as e:
+            if e.status.code == 404:
+                continue
+            raise
+        break
+    else:
+        raise ValueError(
+            f"No cluster DNS service found in {DNS_NAMESPACE} "
+            f"(tried: {', '.join(CLUSTER_DNS_SERVICE_NAMES)})"
+        )
 
     if svc.spec is None or not svc.spec.clusterIP:
-        raise ValueError("kube-dns service has no ClusterIP")
+        raise ValueError(f"{name} service has no ClusterIP")
 
     return svc.spec.clusterIP
