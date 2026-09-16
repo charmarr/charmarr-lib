@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.6.1...charmarr-lib-vpn-v0.6.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* **vpn:** add cnp for cilium cni based clusters ([502d53b](https://github.com/charmarr/charmarr-lib/commit/502d53b47f9f2a043db53b8e3cced4fcc4d9031a))
+
 ## [0.6.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.6.0...charmarr-lib-vpn-v0.6.1) (2026-08-23)
 
 
