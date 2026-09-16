@@ -18,10 +18,22 @@ Why VXLAN traffic passes through:
 - Gateway pod IP is in the cluster pod CIDR
 - NetworkPolicy evaluates outer packet headers, sees cluster CIDR → ALLOWED
 
+On Cilium the standard NetworkPolicy above cannot cover the kube-apiserver:
+Cilium tags in-cluster destinations with security identities (host,
+remote-node, kube-apiserver) rather than CIDRs, so an ipBlock rule for the
+node CIDR never matches. We layer a small CiliumNetworkPolicy alongside the
+NetworkPolicy that grants egress to the kube-apiserver identity only, so
+lightkube calls from the charm survive. On non-Cilium CNIs the CRD is absent
+and the layer is skipped; Calico/Antrea/etc. already honor ipBlock for node
+IPs via the operator-supplied cluster-cidrs.
+
 See ADR: networking/adr-004-vpn-kill-switch.md
 Validated: vxlan-validation-plan.md (2025-12-11)
 """
 
+from typing import Any
+
+from lightkube.generic_resource import create_namespaced_resource
 from lightkube.models.meta_v1 import LabelSelector, ObjectMeta
 from lightkube.models.networking_v1 import (
     IPBlock,
@@ -30,10 +42,20 @@ from lightkube.models.networking_v1 import (
     NetworkPolicyPort,
     NetworkPolicySpec,
 )
+from lightkube.resources.apiextensions_v1 import CustomResourceDefinition
 from lightkube.resources.networking_v1 import NetworkPolicy
 from pydantic import BaseModel, Field
 
 from charmarr_lib.krm import K8sResourceManager, ReconcileResult
+
+CILIUM_CRD_NAME = "ciliumnetworkpolicies.cilium.io"
+
+CiliumNetworkPolicy = create_namespaced_resource(
+    group="cilium.io",
+    version="v2",
+    kind="CiliumNetworkPolicy",
+    plural="ciliumnetworkpolicies",
+)
 
 
 class KillSwitchConfig(BaseModel):
@@ -57,6 +79,29 @@ class KillSwitchConfig(BaseModel):
 def _policy_name(app_name: str) -> str:
     """Generate NetworkPolicy name for an application."""
     return f"{app_name}-vpn-killswitch"
+
+
+def _cnp_name(app_name: str) -> str:
+    """Generate CiliumNetworkPolicy name for an application."""
+    return f"{app_name}-vpn-killswitch-cilium"
+
+
+def _cilium_available(manager: K8sResourceManager) -> bool:
+    """Return True if the CiliumNetworkPolicy CRD is installed."""
+    return manager.exists(CustomResourceDefinition, CILIUM_CRD_NAME)
+
+
+def _build_cilium_apiserver_policy(config: KillSwitchConfig) -> Any:
+    """CiliumNetworkPolicy granting egress to the kube-apiserver identity."""
+    return CiliumNetworkPolicy(
+        metadata=ObjectMeta(name=_cnp_name(config.app_name), namespace=config.namespace),
+        spec={
+            "endpointSelector": {
+                "matchLabels": {"app.kubernetes.io/name": config.app_name},
+            },
+            "egress": [{"toEntities": ["kube-apiserver"]}],
+        },
+    )
 
 
 def _build_kill_switch_policy(config: KillSwitchConfig) -> NetworkPolicy:
@@ -145,23 +190,27 @@ def reconcile_kill_switch(
         result = reconcile_kill_switch(manager, "qbittorrent", "downloads", config=None)
     """
     policy_name = _policy_name(app_name)
+    cnp_name = _cnp_name(app_name)
+    cilium = _cilium_available(manager)
 
     if config is None:
-        if not manager.exists(NetworkPolicy, policy_name, namespace):
+        np_deleted = manager.delete(NetworkPolicy, policy_name, namespace)
+        cnp_deleted = manager.delete(CiliumNetworkPolicy, cnp_name, namespace) if cilium else False
+        if not np_deleted and not cnp_deleted:
             return ReconcileResult(
                 changed=False,
-                message=f"Kill switch NetworkPolicy {policy_name} not present",
+                message=f"Kill switch for {app_name} not present",
             )
-        manager.delete(NetworkPolicy, policy_name, namespace)
         return ReconcileResult(
             changed=True,
-            message=f"Deleted kill switch NetworkPolicy {policy_name}",
+            message=f"Deleted kill switch for {app_name}",
         )
 
-    policy = _build_kill_switch_policy(config)
-    manager.apply(policy)
+    manager.apply(_build_kill_switch_policy(config))
+    if cilium:
+        manager.apply(_build_cilium_apiserver_policy(config))
 
     return ReconcileResult(
         changed=True,
-        message=f"Reconciled kill switch NetworkPolicy {policy_name}",
+        message=f"Reconciled kill switch for {app_name}",
     )

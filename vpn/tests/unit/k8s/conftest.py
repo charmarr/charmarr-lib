@@ -3,9 +3,11 @@
 
 """Shared fixtures for VPN K8s unit tests."""
 
-from unittest.mock import MagicMock
+from unittest.mock import DEFAULT, MagicMock
 
 import pytest
+from httpx import Response
+from lightkube.core.exceptions import ApiError
 from lightkube.models.apps_v1 import StatefulSet, StatefulSetSpec
 from lightkube.models.core_v1 import Container, PodSpec, PodTemplateSpec
 from lightkube.models.meta_v1 import LabelSelector, ObjectMeta
@@ -16,8 +18,16 @@ from charmarr_lib.vpn.interfaces import VPNGatewayProviderData
 
 @pytest.fixture
 def mock_client():
-    """Create a mock lightkube client."""
-    return MagicMock()
+    """Mock lightkube client with the Cilium CRD probe returning 404 by default."""
+    m = MagicMock()
+
+    def _get(resource, name, namespace=None):
+        if getattr(resource, "__name__", "") == "CustomResourceDefinition":
+            raise ApiError(response=Response(404, json={"code": 404, "message": "not found"}))
+        return DEFAULT
+
+    m.get.side_effect = _get
+    return m
 
 
 @pytest.fixture
