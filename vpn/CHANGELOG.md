@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.6.2...charmarr-lib-vpn-v0.6.3) (2026-09-23)
+
+
+### Bug Fixes
+
+* **vpn:** persist init container on restart ([415cee7](https://github.com/charmarr/charmarr-lib/commit/415cee7843c00935534168e6cba866200cd48dd7))
+
 ## [0.6.2](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-vpn-v0.6.1...charmarr-lib-vpn-v0.6.2) (2026-09-16)
 
 
