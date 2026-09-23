@@ -1,3 +1,3 @@
 """Version for charmarr-vpn package."""
 
-__version__ = "0.6.3"  # x-release-please-version
+__version__ = "0.6.4"  # x-release-please-version
