@@ -51,6 +51,16 @@ def test_build_patch_creates_init_container(provider_data):
     assert init_containers[0]["securityContext"]["capabilities"]["add"] == ["NET_ADMIN"]
 
 
+def test_init_container_restores_the_default_route_before_running(provider_data):
+    """A restarted init container can still find the gateway it needs."""
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
+
+    command = patch["spec"]["template"]["spec"]["initContainers"][0]["command"]
+    assert command[:2] == ["/bin/sh", "-c"]
+    assert "ip route add default via" in command[2]
+    assert command[2].endswith("exec /bin/client_init.sh\n")
+
+
 def test_build_patch_creates_sidecar_container(provider_data):
     """Patch includes vpn-route-sidecar container with correct config."""
     patch = _build_patch(provider_data, "vpn-config", "abc12345")

@@ -46,12 +46,31 @@ _CONFIG_MOUNT_PATH = "/config"
 _CONFIG_HASH_ANNOTATION = "charmarr.io/gateway-client-config-hash"
 
 
+# The upstream init script drops the pod's default route before it creates vxlan0, but
+# keys its re-entry check on vxlan0 being present. Anything that fails in between, a DNS
+# lookup for the gateway being the likely one, leaves the pod with routes installed, no
+# default route and no vxlan0. Every restart then reads an empty gateway from the missing
+# default route and cannot recover, turning one transient failure into a permanent
+# CrashLoopBackOff. Restoring the route from one the previous attempt installed puts the
+# script back on its first-entry path.
+_INIT_COMMAND = """\
+if ! ip route show default | grep -q .; then
+    gateway=$(ip route show | awk '/ via / {print $3; exit}')
+    if [ -n "$gateway" ]; then
+        echo "Restoring default route via $gateway left by a failed attempt"
+        ip route add default via "$gateway"
+    fi
+fi
+exec /bin/client_init.sh
+"""
+
+
 def _build_gateway_client_init_container(gateway_dns_name: str) -> Container:
     """Build vpn-route-init container spec."""
     return Container(
         name=CLIENT_INIT_CONTAINER_NAME,
         image=POD_GATEWAY_IMAGE,
-        command=["/bin/client_init.sh"],
+        command=["/bin/sh", "-c", _INIT_COMMAND],
         securityContext=SecurityContext(capabilities=Capabilities(add=["NET_ADMIN"])),
         env=[EnvVar(name="gateway", value=gateway_dns_name)],
         volumeMounts=[VolumeMount(name=_CONFIG_VOLUME_NAME, mountPath=_CONFIG_MOUNT_PATH)],
