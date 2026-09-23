@@ -53,13 +53,16 @@ _CONFIG_HASH_ANNOTATION = "charmarr.io/gateway-client-config-hash"
 # default route and cannot recover, turning one transient failure into a permanent
 # CrashLoopBackOff. Restoring the route from one the previous attempt installed puts the
 # script back on its first-entry path.
+# "gateway" is the environment variable the script reads as GATEWAY_NAME, so the
+# restored address is held somewhere that cannot shadow it.
 _INIT_COMMAND = """\
 if ! ip route show default | grep -q .; then
-    gateway=$(ip route show | awk '/ via / {print $3; exit}')
-    if [ -n "$gateway" ]; then
-        echo "Restoring default route via $gateway left by a failed attempt"
-        ip route add default via "$gateway"
+    restored_default_gw=$(ip route show | awk '/ via / {print $3; exit}')
+    if [ -n "$restored_default_gw" ]; then
+        echo "Restoring default route via $restored_default_gw left by a failed attempt"
+        ip route add default via "$restored_default_gw"
     fi
+    unset restored_default_gw
 fi
 exec /bin/client_init.sh
 """

@@ -61,6 +61,18 @@ def test_init_container_restores_the_default_route_before_running(provider_data)
     assert command[2].endswith("exec /bin/client_init.sh\n")
 
 
+def test_init_container_does_not_shadow_the_gateway_env_var(provider_data):
+    """The wrapper must leave GATEWAY_NAME's source variable alone."""
+    patch = _build_patch(provider_data, "vpn-config", "abc12345")
+
+    init_container = patch["spec"]["template"]["spec"]["initContainers"][0]
+    passed = {env["name"] for env in init_container["env"]}
+    script = init_container["command"][2]
+
+    for name in passed:
+        assert f"{name}=" not in script, f"wrapper assigns to {name}, shadowing its env var"
+
+
 def test_build_patch_creates_sidecar_container(provider_data):
     """Patch includes vpn-route-sidecar container with correct config."""
     patch = _build_patch(provider_data, "vpn-config", "abc12345")
