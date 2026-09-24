@@ -12,6 +12,7 @@ See ADR: apps/adr-003-recyclarr-integration.md
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING
 
 from charmarr_lib.core.enums import MediaManager
@@ -25,91 +26,47 @@ logger = logging.getLogger(__name__)
 
 _RECYCLARR_TIMEOUT = 120.0
 _RECYCLARR_BIN_PATH = "/app/recyclarr/recyclarr"
-_RECYCLARR_CONFIG_PATH = "/tmp/recyclarr.yml"
+_RECYCLARR_CONFIG_DIR = "/config/configs"
+_PLACEHOLDER_KEYS = ("base_url", "api_key")
 
 
 class RecyclarrError(Exception):
     """Raised when Recyclarr execution fails."""
 
 
-def _expand_template_to_includes(manager: MediaManager, template: str) -> list[str]:
-    """Expand user-friendly template name to actual Recyclarr include names.
+def _config_path(template: str) -> str:
+    """Path Recyclarr writes a materialised template to."""
+    return f"{_RECYCLARR_CONFIG_DIR}/{template}.yml"
 
-    Recyclarr templates (shown in `config list templates`) are NOT directly usable
-    in the `include:` directive. Each template maps to multiple includes:
-    - quality-definition (varies by media type: movie for radarr, series for sonarr)
-    - quality-profile-{template}
-    - custom-formats-{template}
 
-    Sonarr uses v4 prefix for quality-profiles and custom-formats.
-    See: https://github.com/recyclarr/config-templates/tree/master/sonarr/includes
+def _apply_instance_settings(config: str, base_url: str, api_key: str) -> str:
+    """Replace a template's placeholder connection settings with real ones.
+
+    Templates ship prompts such as "Put your Radarr URL here" rather than values,
+    so the keys are matched instead of the prompt text, which differs per service
+    and has changed between releases.
     """
-    prefix = manager.value
-    if manager == MediaManager.RADARR:
-        return [
-            f"{prefix}-quality-definition-movie",
-            f"{prefix}-quality-profile-{template}",
-            f"{prefix}-custom-formats-{template}",
-        ]
-    elif manager == MediaManager.SONARR:
-        return [
-            f"{prefix}-quality-definition-series",
-            f"{prefix}-v4-quality-profile-{template}",
-            f"{prefix}-v4-custom-formats-{template}",
-        ]
-    else:
-        raise RecyclarrError(f"Unsupported media manager for Recyclarr: {manager}")
+    values = {"base_url": base_url, "api_key": api_key}
+    for key in _PLACEHOLDER_KEYS:
+        config = re.sub(
+            rf"^(\s*){key}:.*$",
+            lambda m, k=key: f"{m.group(1)}{k}: {values[k]}",
+            config,
+            count=1,
+            flags=re.MULTILINE,
+        )
+    return config
 
 
-def _generate_config(
-    manager: MediaManager,
-    api_key: str,
-    templates: list[str],
-    port: int,
-    base_url: str | None,
-) -> str:
-    """Generate Recyclarr YAML config using TRaSH Guide templates."""
-    config_key = manager.value
-    url_base = base_url or ""
-
-    # Expand templates to actual include names and deduplicate
-    includes: list[str] = []
-    seen: set[str] = set()
-    for template in templates:
-        for include in _expand_template_to_includes(manager, template):
-            if include not in seen:
-                includes.append(include)
-                seen.add(include)
-
-    includes_yaml = "\n".join(f"      - template: {inc}" for inc in includes)
-
-    return f"""{config_key}:
-  {config_key}:
-    base_url: http://localhost:{port}{url_base}
-    api_key: {api_key}
-
-    include:
-{includes_yaml}
-"""
-
-
-def _run_recyclarr_in_container(
-    container: ops.Container,
-    config_content: str,
-) -> None:
-    """Run Recyclarr in a container with the official recyclarr image."""
-    container.push(_RECYCLARR_CONFIG_PATH, config_content, make_dirs=True)
-
-    process = container.exec(
-        [_RECYCLARR_BIN_PATH, "sync", "--config", _RECYCLARR_CONFIG_PATH],
-        timeout=_RECYCLARR_TIMEOUT,
-    )
+def _run(container: ops.Container, command: list[str]) -> str:
+    """Run a Recyclarr command, raising RecyclarrError on failure."""
+    process = container.exec(command, timeout=_RECYCLARR_TIMEOUT)
     try:
         stdout, _ = process.wait_output()
-        logger.info("Recyclarr sync completed: %s", stdout)
     except (ops.pebble.ExecError, ops.pebble.ChangeError) as e:
-        logger.error("Recyclarr sync failed: %s", e)
-        raise RecyclarrError(f"Recyclarr sync failed: {e}") from e
+        logger.error("Recyclarr command %s failed: %s", command, e)
+        raise RecyclarrError(f"Recyclarr command failed: {e}") from e
+    return stdout
 
 
 def sync_trash_profiles(
@@ -122,29 +79,39 @@ def sync_trash_profiles(
 ) -> None:
     """Sync Trash Guides profiles for the specified media manager.
 
-    Generates Recyclarr config and runs it in the provided container
-    to sync quality profiles from Trash Guides. Runs idempotently.
+    Materialises each requested TRaSH Guide template, points it at this instance,
+    and syncs. Runs idempotently: templates no longer requested are discarded so a
+    narrowed configuration stops syncing what it dropped.
 
     Args:
         container: Pebble container running the recyclarr image
         manager: The media manager type (RADARR, SONARR, etc.)
         api_key: API key for the media manager
-        profiles_config: Comma-separated list of profile template names
+        profiles_config: Comma-separated list of template names
         port: WebUI port for the media manager
         base_url: Optional URL base path (e.g., "/radarr")
 
     Raises:
         RecyclarrError: If Recyclarr execution fails
     """
+    if manager not in (MediaManager.RADARR, MediaManager.SONARR):
+        raise RecyclarrError(f"Unsupported media manager for Recyclarr: {manager}")
+
     templates = [t.strip() for t in profiles_config.split(",") if t.strip()]
     if not templates:
         return
 
-    config = _generate_config(
-        manager=manager,
-        api_key=api_key,
-        templates=templates,
-        port=port,
-        base_url=base_url,
-    )
-    _run_recyclarr_in_container(container, config)
+    _run(container, ["rm", "-rf", _RECYCLARR_CONFIG_DIR])
+
+    create = [_RECYCLARR_BIN_PATH, "config", "create"]
+    for template in templates:
+        create += ["--template", template]
+    _run(container, create)
+
+    instance_url = f"http://localhost:{port}{base_url or ''}"
+    for template in templates:
+        path = _config_path(template)
+        config = container.pull(path).read()
+        container.push(path, _apply_instance_settings(config, instance_url, api_key))
+
+    logger.info("Recyclarr sync completed: %s", _run(container, [_RECYCLARR_BIN_PATH, "sync"]))

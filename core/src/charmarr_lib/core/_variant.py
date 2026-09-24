@@ -14,10 +14,15 @@ _ROOT_FOLDERS: dict[tuple[ContentVariant, MediaManager], str] = {
     (ContentVariant.ANIME, MediaManager.SONARR): "/data/media/anime/tv",
 }
 
-_DEFAULT_TRASH_PROFILES: dict[ContentVariant, str] = {
-    ContentVariant.STANDARD: "",
-    ContentVariant.UHD: "uhd-bluray-web",
-    ContentVariant.ANIME: "anime",
+# TRaSH Guides names its Sonarr profiles differently from its Radarr ones, so the
+# default cannot be chosen from the variant alone.
+_DEFAULT_TRASH_PROFILES: dict[tuple[ContentVariant, MediaManager], str] = {
+    (ContentVariant.STANDARD, MediaManager.RADARR): "",
+    (ContentVariant.UHD, MediaManager.RADARR): "uhd-bluray-web",
+    (ContentVariant.ANIME, MediaManager.RADARR): "anime-remux-1080p",
+    (ContentVariant.STANDARD, MediaManager.SONARR): "",
+    (ContentVariant.UHD, MediaManager.SONARR): "web-2160p",
+    (ContentVariant.ANIME, MediaManager.SONARR): "anime-remux-1080p",
 }
 
 
@@ -26,12 +31,9 @@ def get_root_folder(variant: ContentVariant, manager: MediaManager) -> str:
     return _ROOT_FOLDERS[(variant, manager)]
 
 
-def get_default_trash_profiles(variant: ContentVariant) -> str:
-    """Get default trash profiles for a content variant.
+def get_default_trash_profiles(variant: ContentVariant, manager: MediaManager) -> str:
+    """Get the default Recyclarr template for a content variant and media manager.
 
-    Returns:
-        - standard: empty (no default profiles)
-        - 4k: uhd-bluray-web
-        - anime: anime
+    Returns an empty string for the standard variant, which syncs nothing.
     """
-    return _DEFAULT_TRASH_PROFILES[variant]
+    return _DEFAULT_TRASH_PROFILES[(variant, manager)]

@@ -14,13 +14,30 @@ from charmarr_lib.core import (
     sync_trash_profiles,
 )
 
+TEMPLATE = """radarr:
+  hd-bluray-web:
+    base_url: Put your Radarr URL here
+    api_key: Put your API key here
+
+    quality_definition:
+      type: movie
+"""
+
 
 @pytest.fixture
 def mock_container():
-    """Create a mock ops.Container."""
+    """Create a mock ops.Container that serves materialised templates."""
     container = MagicMock()
     container.can_connect.return_value = True
+    process = MagicMock()
+    process.wait_output.return_value = ("success", "")
+    container.exec.return_value = process
+    container.pull.return_value.read.return_value = TEMPLATE
     return container
+
+
+def _commands(container) -> list[list[str]]:
+    return [call[0][0] for call in container.exec.call_args_list]
 
 
 def test_sync_failure_raises(mock_container):
@@ -54,12 +71,8 @@ def test_sync_trash_profiles_empty_skips(mock_container):
     mock_container.exec.assert_not_called()
 
 
-def test_sync_trash_profiles_parses_and_trims(mock_container):
-    """Profiles are parsed and expanded to recyclarr include names."""
-    mock_process = MagicMock()
-    mock_process.wait_output.return_value = ("success", "")
-    mock_container.exec.return_value = mock_process
-
+def test_templates_are_materialised_then_synced(mock_container):
+    """Each requested template is created, then a single sync runs."""
     sync_trash_profiles(
         container=mock_container,
         manager=MediaManager.RADARR,
@@ -68,26 +81,33 @@ def test_sync_trash_profiles_parses_and_trims(mock_container):
         port=7878,
     )
 
-    push_calls = mock_container.push.call_args_list
-    config_call = [c for c in push_calls if "/tmp/recyclarr.yml" in str(c)]
-    assert len(config_call) == 1
-    config_content = config_call[0][0][1]
-    # Templates expanded to include names
-    assert "- template: radarr-quality-definition-movie" in config_content
-    assert "- template: radarr-quality-profile-hd-bluray-web" in config_content
-    assert "- template: radarr-custom-formats-hd-bluray-web" in config_content
-    assert "- template: radarr-quality-profile-uhd-bluray-web" in config_content
-    assert "- template: radarr-custom-formats-uhd-bluray-web" in config_content
-    # Quality definition should only appear once (deduplicated)
-    assert config_content.count("radarr-quality-definition-movie") == 1
+    create = next(c for c in _commands(mock_container) if "create" in c)
+    assert create[:3] == ["/app/recyclarr/recyclarr", "config", "create"]
+    assert create.count("--template") == 2
+    assert "hd-bluray-web" in create and "uhd-bluray-web" in create
+
+    assert _commands(mock_container)[-1] == ["/app/recyclarr/recyclarr", "sync"]
 
 
-def test_sync_pushes_config_and_execs(mock_container):
-    """Config is pushed to container and recyclarr is executed."""
-    mock_process = MagicMock()
-    mock_process.wait_output.return_value = ("success", "")
-    mock_container.exec.return_value = mock_process
+def test_stale_templates_are_discarded_before_creating(mock_container):
+    """A narrowed configuration stops syncing what it dropped."""
+    sync_trash_profiles(
+        container=mock_container,
+        manager=MediaManager.RADARR,
+        api_key="key",
+        profiles_config="hd-bluray-web",
+        port=7878,
+    )
 
+    commands = _commands(mock_container)
+    assert commands[0] == ["rm", "-rf", "/config/configs"]
+    assert commands.index(["rm", "-rf", "/config/configs"]) < next(
+        i for i, c in enumerate(commands) if "create" in c
+    )
+
+
+def test_placeholders_are_replaced_with_instance_settings(mock_container):
+    """The materialised template is pointed at this instance."""
     sync_trash_profiles(
         container=mock_container,
         manager=MediaManager.RADARR,
@@ -97,32 +117,21 @@ def test_sync_pushes_config_and_execs(mock_container):
         base_url="/radarr",
     )
 
-    assert mock_container.push.call_count == 1
-    mock_container.exec.assert_called_once()
+    path, config = mock_container.push.call_args[0]
+    assert path == "/config/configs/hd-bluray-web.yml"
+    assert "    base_url: http://localhost:7878/radarr" in config
+    assert "    api_key: test-key" in config
+    assert "Put your" not in config
+    assert "quality_definition:" in config
 
-    exec_args = mock_container.exec.call_args
-    assert "/app/recyclarr/recyclarr" in exec_args[0][0]
-    assert "sync" in exec_args[0][0]
 
-
-def test_sonarr_uses_v4_template_names(mock_container):
-    """Sonarr uses v4 prefix for quality-profile and custom-formats."""
-    mock_process = MagicMock()
-    mock_process.wait_output.return_value = ("success", "")
-    mock_container.exec.return_value = mock_process
-
-    sync_trash_profiles(
-        container=mock_container,
-        manager=MediaManager.SONARR,
-        api_key="key",
-        profiles_config="web-1080p",
-        port=8989,
-    )
-
-    push_calls = mock_container.push.call_args_list
-    config_call = [c for c in push_calls if "/tmp/recyclarr.yml" in str(c)]
-    config_content = config_call[0][0][1]
-    assert "- template: sonarr-quality-definition-series" in config_content
-    assert "- template: sonarr-v4-quality-profile-web-1080p" in config_content
-    assert "- template: sonarr-v4-custom-formats-web-1080p" in config_content
-    assert "sonarr-quality-definition-movie" not in config_content
+def test_unsupported_manager_raises(mock_container):
+    """Recyclarr only knows how to configure Radarr and Sonarr."""
+    with pytest.raises(RecyclarrError, match="Unsupported media manager"):
+        sync_trash_profiles(
+            container=mock_container,
+            manager=MediaManager.LIDARR,
+            api_key="key",
+            profiles_config="web-1080p",
+            port=8686,
+        )
