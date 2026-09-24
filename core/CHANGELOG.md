@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.19.1...charmarr-lib-core-v1.0.0) (2026-09-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** get_default_trash_profiles() takes a MediaManager argument. The default for the anime variant is now anime-remux-1080p, and for the 4k variant on Sonarr it is web-2160p; the previous names no longer exist upstream.
+
+### Features
+
+* **core:** support recyclarr v8 template configuration ([a9cb5b5](https://github.com/charmarr/charmarr-lib/commit/a9cb5b5ae576ee74c1b8b7489d139e7ac7413ec7))
+
 ## [0.19.1](https://github.com/charmarr/charmarr-lib/compare/charmarr-lib-core-v0.19.0...charmarr-lib-core-v0.19.1) (2026-08-22)
 
 
